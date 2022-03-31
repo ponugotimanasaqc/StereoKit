@@ -193,6 +193,9 @@
     <ClCompile Include="backend.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="ui\ui_interaction.cpp">
+      <Filter>ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stereokit.h" />
@@ -270,9 +273,6 @@
     </ClInclude>
     <ClInclude Include="systems\line_drawer.h">
       <Filter>systems</Filter>
-    </ClInclude>
-    <ClInclude Include="_stereokit_ui.h">
-      <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="libraries\stb_image_write.h">
       <Filter>libraries</Filter>
@@ -437,6 +437,12 @@
       <Filter>tools</Filter>
     </ClInclude>
     <ClInclude Include="stereokit_ui.h">
+      <Filter>ui</Filter>
+    </ClInclude>
+    <ClInclude Include="_stereokit_ui.h">
+      <Filter>ui</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\ui_interaction.h">
       <Filter>ui</Filter>
     </ClInclude>
   </ItemGroup>

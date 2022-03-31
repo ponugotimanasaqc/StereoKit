@@ -104,4 +104,6 @@ void quat_decompose_swing_twist(quat rotation, vec3 direction, quat *out_swing, 
 vec3 bounds_corner (const bounds_t &bounds, int32_t index8);
 vec3 math_cubemap_corner(int i);
 
+bool32_t bounds_ray_intersect_dist(bounds_t bounds, ray_t ray, float *out_distance);
+
 } // namespace sk
