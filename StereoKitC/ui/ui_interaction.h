@@ -17,6 +17,16 @@ enum ui_interactor_event_ {
 	ui_interactor_event_pinch = 1 << 3
 };
 
+enum ui_2h_state_ {
+	ui_2h_state_none             = 0,
+	ui_2h_state_1h_active        = 1 << 1,
+	ui_2h_state_1h_just_active   = 2 << 1,
+	ui_2h_state_1h_just_inactive = 3 << 1,
+	ui_2h_state_2h_active        = 4 << 1,
+	ui_2h_state_2h_just_active   = 5 << 1,
+	ui_2h_state_2h_just_inactive = 6 << 1,
+};
+
 struct ui_interactor_pos_t {
 	union {
 		struct { ray_t ray; };
@@ -31,6 +41,9 @@ struct ui_interactor_t {
 	button_state_        tracked;
 	float                activation;
 	float                radius;
+	pose_t               pose_world;
+	pose_t               pose_local;
+	pose_t               action_pose_world;
 	ui_interactor_pos_t  pos_world;
 	ui_interactor_pos_t  pos_local;
 	ui_interactor_pos_t  action_pos_world;
@@ -46,7 +59,8 @@ bool32_t      ui_in_box                   (vec3 pt1, vec3 pt2, float radius, bou
 bool32_t      ui_intersect_box            (ray_t ray, bounds_t box, float *out_distance);
 bool32_t      ui_interact_box             (ui_interactor_t *interactor, bounds_t box, float *out_focus);
 
-void          ui_interaction_1h           (uint64_t id, ui_interactor_event_ event_mask, vec3 unfocused_start, vec3 unfocused_size, vec3 focused_start, vec3 focused_size, button_state_ *out_focus_state, int32_t *out_hand);
+void          ui_interaction_1h           (uint64_t id, ui_interactor_event_ event_mask, vec3 unfocused_start, vec3 unfocused_size, vec3 focused_start, vec3 focused_size, button_state_ *out_focus_state, int32_t *out_interactor);
+void          ui_interaction_2h           (uint64_t id, ui_interactor_event_ event_mask, bounds_t bounds, button_state_ *out_focus_state, int32_t *out_interactor);
 
 bool32_t      ui_interactor_is_preoccupied(int32_t interactor, uint64_t for_el_id, bool32_t include_focused);
 button_state_ ui_interactor_set_focus     (int32_t interactor, uint64_t for_el_id, bool32_t focused, float priority);

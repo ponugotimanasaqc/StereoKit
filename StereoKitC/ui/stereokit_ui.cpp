@@ -647,7 +647,7 @@ bool ui_init() {
 	skui_interactors.add(hand);
 	skui_interactors.add(hand);
 	hand.type   = ui_interactor_type_ray;
-	hand.events = ui_interactor_event_poke;
+	hand.events = (ui_interactor_event_)(ui_interactor_event_poke | ui_interactor_event_pinch);
 	skui_interactors.add(hand);
 	skui_interactors.add(hand);
 
@@ -1065,7 +1065,7 @@ void ui_space(float space) {
 
 void ui_button_behavior(vec3 window_relative_pos, vec2 size, uint64_t id, float &finger_offset, button_state_ &button_state, button_state_ &focus_state) {
 	button_state = button_state_inactive;
-	focus_state  = button_state_inactive;
+	focus_state = button_state_inactive;
 	int32_t interactor = -1;
 
 	// Button interaction focus is detected out in front of the button to 
@@ -1078,12 +1078,13 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, uint64_t id, float 
 	// completely through the button. Width and height is added to this 
 	// volume to account for vertical or horizontal movement during a press,
 	// such as the downward motion often accompanying a 'poke' motion.
-	float activation_plane = skui_settings.depth + skui_finger_radius*2;
+	float interact_radius  = input_hand(handed_left)->fingers[hand_finger_index][hand_joint_tip].radius; // TODO: this might be something to revise for interactors?
+	float activation_plane = skui_settings.depth + interact_radius*2;
 	vec3  activation_start = window_relative_pos + vec3{ 0, 0, -activation_plane };
 	vec3  activation_size  = vec3{ size.x, size.y, 0.0001f };
 
-	vec3  box_size  = vec3{ size.x + 2*skui_finger_radius, size.y + 2*skui_finger_radius, activation_plane + 6*skui_finger_radius  };
-	vec3  box_start = window_relative_pos + vec3{ skui_finger_radius, skui_finger_radius, -activation_plane + box_size.z };
+	vec3  box_size  = vec3{ size.x + 2*interact_radius, size.y + 2*interact_radius, activation_plane + 6*interact_radius  };
+	vec3  box_start = window_relative_pos + vec3{ interact_radius, interact_radius, -activation_plane + box_size.z };
 	ui_interaction_1h(id, ui_interactor_event_poke,
 		activation_start, activation_size,
 		box_start,        box_size,
