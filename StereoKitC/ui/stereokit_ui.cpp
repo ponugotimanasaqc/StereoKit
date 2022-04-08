@@ -676,6 +676,9 @@ void ui_update() {
 		actor->radius            = hand->fingers[1][4].radius;
 		actor->tracked           = hand->tracked_state;
 
+		actor->focused_prev      = actor->focused;
+		actor->active_prev       = actor->active;
+
 		actor->focus_priority    = FLT_MAX;
 		actor->focused           = 0;
 		actor->active            = 0;
@@ -702,6 +705,9 @@ void ui_update() {
 		actor->activation        = hand->pinch_activation;
 		actor->state             = hand->pinch_state;
 
+		actor->focused_prev      = actor->focused;
+		actor->active_prev       = actor->active;
+
 		actor->focus_priority    = FLT_MAX;
 		actor->focused           = 0;
 		actor->active            = 0;
@@ -714,11 +720,33 @@ void ui_update() {
 		}
 	}
 	
-	/*for (size_t i = 0; i < handed_max; i++) {
+	for (size_t i = 0; i < handed_max; i++) {
+		const hand_t    *hand    = input_hand((handed_)i);
 		const pointer_t *pointer = input_get_pointer(input_hand_pointer_id[i]);
 		ui_interactor_t *actor   = &skui_interactors[i+4];
 
-		bool was_ray_enabled = true;// skui_hand[i].ray_enabled && !skui_hand[i].ray_discard;
+		actor->pos_world.ray     = pointer->ray;
+		actor->pos_local.at      = actor->pos_world.at;
+		actor->radius            = 0;
+		actor->tracked           = pointer->tracked;
+		actor->activation        = pointer->state & button_state_active?1:0;
+		actor->state             = pointer->state;
+
+		actor->focused_prev      = actor->focused;
+		actor->active_prev       = actor->active;
+
+		actor->focus_priority    = FLT_MAX;
+		actor->focused           = 0;
+		actor->active            = 0;
+
+		// Don't let the hand trigger things while popping in and out of
+		// tracking
+		if (hand->tracked_state & button_state_just_active) {
+			actor->pos_world.at_prev = actor->pos_world.at;
+			actor->pos_local.at_prev = actor->pos_world.at;
+		}
+
+		/*bool was_ray_enabled = true;// skui_hand[i].ray_enabled && !skui_hand[i].ray_discard;
 
 		// draw hand rays
 		skui_hand[i].ray_visibility = math_lerp(skui_hand[i].ray_visibility,
@@ -736,8 +764,8 @@ void ui_update() {
 				line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
 			line_add_listv(points, 5);
 		}
-		skui_hand[i].ray_discard = false;
-	}*/
+		skui_hand[i].ray_discard = false;*/
+	}
 
 	ui_push_surface(pose_identity);
 
@@ -1104,7 +1132,7 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, uint64_t id, float 
 	finger_offset = skui_settings.depth;
 	if (focus_state & button_state_active) {
 		finger_offset = -(skui_interactors[interactor].pos_local.at.z+skui_interactors[interactor].radius) - window_relative_pos.z;
-		bool pressed  = finger_offset < skui_settings.depth / 2;
+		bool pressed  = finger_offset < skui_settings.depth / 2 || skui_interactors[interactor].state & button_state_just_active;
 		button_state  = ui_interactor_set_active(interactor, id, pressed);
 		finger_offset = fminf(fmaxf(2*mm2m, finger_offset), skui_settings.depth);
 	} else if (focus_state & button_state_just_inactive) {
@@ -1549,7 +1577,7 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 		for (int32_t i = 0; i < skui_interactors.count; i++) {
 			if (ui_interactor_is_preoccupied(i, id_hash, false)) {
 				const ui_interactor_t *actor = &skui_interactors[i];
-				if (actor->focused && skui_preserve_keyboard_ids.index_of(actor->focused) < 0) {
+				if (actor->focused && skui_preserve_keyboard_ids_read->index_of(actor->focused) < 0) {
 					skui_input_target = 0;
 					platform_keyboard_show(false, type);
 				}
