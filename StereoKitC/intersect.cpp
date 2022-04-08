@@ -63,8 +63,6 @@ bool32_t sphere_point_contains(sphere_t sphere, vec3 pt) {
 
 // From here: http://www.iquilezles.org/www/articles/intersectors/intersectors.htm
 bool32_t bounds_ray_intersect_dist(bounds_t bounds, ray_t ray, float *out_distance) {
-	*out_distance = 0;
-
 	vec3 rayRelative = ray.pos - bounds.center;
 	vec3 m = { 1.f / ray.dir.x, 1.f / ray.dir.y, 1.f / ray.dir.z };
 	vec3 n = m * rayRelative; 
@@ -73,9 +71,12 @@ bool32_t bounds_ray_intersect_dist(bounds_t bounds, ray_t ray, float *out_distan
 	vec3 t2 = -n + k;
 	float tN = fmaxf(fmaxf(t1.x, t1.y), t1.z);
 	float tF = fminf(fminf(t2.x, t2.y), t2.z);
-	if (tN > tF || tF < 0.0) return false;
+	if (tN > tF || tF < 0.0) {
+		if (out_distance) *out_distance = 0;
+		return false;
+	}
 
-	*out_distance = tN;
+	if (out_distance) *out_distance = tN;
 	return true;
 }
 

@@ -57,7 +57,7 @@ struct ui_interactor_t {
 
 bool32_t      ui_in_box                   (vec3 pt1, vec3 pt2, float radius, bounds_t box);
 bool32_t      ui_intersect_box            (ray_t ray, bounds_t box, float *out_distance);
-bool32_t      ui_interact_box             (ui_interactor_t *interactor, bounds_t box, float *out_focus);
+bool32_t      ui_interact_box             (const ui_interactor_t *interactor, bounds_t box, float *out_focus);
 
 void          ui_interaction_1h           (uint64_t id, ui_interactor_event_ event_mask, vec3 unfocused_start, vec3 unfocused_size, vec3 focused_start, vec3 focused_size, button_state_ *out_focus_state, int32_t *out_interactor);
 void          ui_interaction_2h           (uint64_t id, ui_interactor_event_ event_mask, bounds_t bounds, button_state_ *out_focus_state, int32_t *out_interactor);

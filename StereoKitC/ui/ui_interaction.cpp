@@ -18,8 +18,7 @@ bool32_t ui_in_box(vec3 pt, vec3 pt_prev, float radius, bounds_t box) {
 bool32_t ui_intersect_box(ray_t ray, bounds_t box, float *out_distance) {
 	if (skui_show_volumes)
 		render_add_mesh(skui_box_dbg, skui_mat_dbg, matrix_trs(box.center, quat_identity, box.dimensions));
-	vec3 at;
-	return bounds_ray_intersect(box, ray, &at);
+	return bounds_ray_intersect_dist(box, ray, out_distance);
 }
 
 ///////////////////////////////////////////
@@ -54,16 +53,12 @@ void ui_interaction_1h(uint64_t id, ui_interactor_event_ event_mask, vec3 box_un
 			(actor->events & event_mask) == 0)
 			continue;
 
-		bool was_focused = actor->focused_prev == id;
-		vec3 box_start   = box_unfocused_start;
-		vec3 box_size    = box_unfocused_size;
-		if (was_focused) {
-			box_start = box_focused_start;
-			box_size  = box_focused_size;
-		}
+		bounds_t bounds = actor->focused_prev == id
+			? ui_size_box(box_focused_start,   box_focused_size)
+			: ui_size_box(box_unfocused_start, box_unfocused_size);
 
 		float         priority = 0;
-		bool          in_box   = ui_interact_box(actor, ui_size_box(box_start, box_size), &priority);
+		bool          in_box   = ui_interact_box(actor, bounds, &priority);
 		button_state_ focus    = ui_interactor_set_focus(i, id, in_box, priority);
 		if (focus != button_state_inactive) {
 			*out_interactor  = i;
@@ -77,7 +72,7 @@ void ui_interaction_1h(uint64_t id, ui_interactor_event_ event_mask, vec3 box_un
 
 ///////////////////////////////////////////
 
-void ui_interaction_2h(uint64_t id, ui_interactor_event_ event_mask, bounds_t bounds, ui_2h_state_ *out_focus_state, int32_t *out_interactor1, int32_t *out_interactor2) {
+void ui_interaction_2h(uint64_t id, ui_interactor_event_ event_mask, bounds_t bounds, ui_2h_state_* out_focus_state, int32_t* out_interactor1, int32_t* out_interactor2) {
 	*out_focus_state = ui_2h_state_none;
 	*out_interactor1 = -1;
 	*out_interactor2 = -1;
@@ -123,7 +118,7 @@ void ui_interaction_2h(uint64_t id, ui_interactor_event_ event_mask, bounds_t bo
 		// This waits until the window has been focused for a frame,
 		// otherwise the handle UI may try and use a frame of focus to move
 		// around a bit.
-		if (actor->focused_prev == id) {
+		/*if (actor->focused_prev == id) {
 			if (actor->state & button_state_just_active) {
 				actor->action_pose_world = actor->pose_world;
 			}
@@ -224,7 +219,7 @@ void ui_interaction_2h(uint64_t id, ui_interactor_event_ event_mask, bounds_t bo
 					actor->active = 0;
 				}
 			}
-		}
+		}*/
 	}
 }
 
