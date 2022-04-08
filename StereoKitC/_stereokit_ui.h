@@ -15,7 +15,8 @@ extern bool32_t   skui_interact_enabled;
 extern mesh_t     skui_box_dbg;
 extern material_t skui_mat_dbg;
 
-extern array_t<bool>     skui_preserve_keyboard_stack;
-extern array_t<uint64_t> skui_preserve_keyboard_ids;
+extern array_t<bool>      skui_preserve_keyboard_stack;
+extern array_t<uint64_t> *skui_preserve_keyboard_ids_read;
+extern array_t<uint64_t> *skui_preserve_keyboard_ids_write;
 
 }

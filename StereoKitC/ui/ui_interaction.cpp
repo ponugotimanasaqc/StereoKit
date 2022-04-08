@@ -44,7 +44,7 @@ void ui_interaction_1h(uint64_t id, ui_interactor_event_ event_mask, vec3 box_un
 	if (!skui_interact_enabled) { return; }
 
 	if (skui_preserve_keyboard_stack.last()) {
-		skui_preserve_keyboard_ids.add(id);
+		skui_preserve_keyboard_ids_write->add(id);
 	}
 
 	for (int32_t i = 0; i < skui_interactors.count; i++) {
