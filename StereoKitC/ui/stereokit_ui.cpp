@@ -1365,14 +1365,14 @@ bool32_t ui_button_at_g(const C *text, vec3 window_relative_pos, vec2 size) {
 
 	if (state & button_state_just_active)
 		ui_anim_start(id);
-	float color_blend = state & button_state_active ? 2.f : 1;
+	float color_blend = focus & button_state_active ? 2.f : 1;
 	if (ui_anim_has(id, .2f)) {
 		float t     = ui_anim_elapsed    (id, .2f);
 		color_blend = math_ease_overshoot(1, 2.f, 40, t);
 	}
+	color_blend = fmaxf(color_blend, 1 + 1 - (finger_offset / skui_settings.depth));
 
-	float activation = 1 + 1-(finger_offset / skui_settings.depth);
-	ui_draw_el(ui_vis_button, window_relative_pos,  vec3{ size.x,   size.y,   finger_offset }, ui_color_common, fmaxf(activation,color_blend));
+	ui_draw_el(ui_vis_button, window_relative_pos,  vec3{ size.x,   size.y,   finger_offset }, ui_color_common, color_blend);
 	ui_text_in(               window_relative_pos - vec3{ size.x/2, size.y/2, finger_offset + 2*mm2m }, vec2{size.x-skui_settings.padding*2, size.y-skui_settings.padding*2}, text, text_align_center, text_align_center);
 
 	return state & button_state_just_active;
