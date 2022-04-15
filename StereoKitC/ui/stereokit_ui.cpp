@@ -63,12 +63,6 @@ struct ui_id_t {
 	uint64_t id;
 };
 
-struct ui_el_visual_t {
-	mesh_t     mesh;
-	material_t material;
-	vec2       min_size;
-};
-
 array_t<ui_window_t> skui_sl_windows = {};
 array_t<ui_id_t>     skui_id_stack   = {};
 array_t<layer_t>     skui_layers     = {};
