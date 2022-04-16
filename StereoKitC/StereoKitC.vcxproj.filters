@@ -196,6 +196,9 @@
     <ClCompile Include="libraries\cgltf.cpp">
       <Filter>libraries</Filter>
     </ClCompile>
+    <ClCompile Include="ui\ui_theme.cpp">
+      <Filter>ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stereokit.h" />
@@ -440,6 +443,9 @@
       <Filter>tools</Filter>
     </ClInclude>
     <ClInclude Include="stereokit_ui.h">
+      <Filter>ui</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\ui_theme.h">
       <Filter>ui</Filter>
     </ClInclude>
   </ItemGroup>
