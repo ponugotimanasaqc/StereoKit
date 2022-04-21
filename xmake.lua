@@ -66,7 +66,7 @@ target("StereoKitC")
     add_options("uwp")
     add_options("linux-graphics-backend")
     add_options("oculus-openxr")
-    set_version("0.3.6-preview.4")
+    set_version("0.3.6-preview.5")
     set_kind("shared")
     set_symbols("debug")
     if is_plat("windows") then
@@ -99,7 +99,7 @@ target("StereoKitC")
     add_packages("reactphysics3d")
     if not is_plat("wasm") then
         -- On Android, we have a precompiled binary provided by Oculus
-        if has_config("oculus-openxr") then
+        if has_config("oculus-openxr") and is_plat("android") then
             add_linkdirs("StereoKitC/lib/bin/$(arch)/$(mode)")
             add_links("openxr_loader")
         else
