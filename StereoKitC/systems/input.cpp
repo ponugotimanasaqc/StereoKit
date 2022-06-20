@@ -1,4 +1,5 @@
 #include "../stereokit.h"
+#include "../profiler.h"
 #include "input.h"
 #include "input_keyboard.h"
 #include "hand/input_hand.h"
@@ -113,9 +114,12 @@ void input_shutdown() {
 ///////////////////////////////////////////
 
 void input_update() {
+	PROFILE_START();
 	
 	input_keyboard_update();
 	input_hand_update();
+	
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////

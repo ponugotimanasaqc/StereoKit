@@ -13,6 +13,8 @@
 #include <math.h>
 #include <float.h>
 
+#include "../profiler.h"
+
 ///////////////////////////////////////////
 
 namespace sk {
@@ -668,6 +670,8 @@ bool ui_init() {
 ///////////////////////////////////////////
 
 void ui_update() {
+	PROFILE_START();
+	
 	skui_finger_radius = 0;
 	const matrix *to_local = hierarchy_to_local();
 	for (size_t i = 0; i < handed_max; i++) {
@@ -730,6 +734,8 @@ void ui_update() {
 	array_t<uint64_t> *tmp = skui_preserve_keyboard_ids_read;
 	skui_preserve_keyboard_ids_read  = skui_preserve_keyboard_ids_write;
 	skui_preserve_keyboard_ids_write = tmp;
+
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////

@@ -4,6 +4,7 @@
 
 #include "../libraries/array.h"
 #include "../hierarchy.h"
+#include "../profiler.h"
 #include "../sk_math_dx.h"
 #include "../sk_memory.h"
 
@@ -133,6 +134,8 @@ bool sprite_drawer_init() {
 ///////////////////////////////////////////
 
 void sprite_drawer_update() {
+	PROFILE_START();
+	
 	for (size_t i = 0; i < sprite_buffers.count; i++) {
 		sprite_buffer_t &buffer = sprite_buffers[i];
 		if (buffer.vert_count <= 0)
@@ -144,6 +147,8 @@ void sprite_drawer_update() {
 		render_add_mesh(buffer.mesh, buffer.material, matrix_identity);
 		buffer.vert_count = 0;
 	}
+	
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////

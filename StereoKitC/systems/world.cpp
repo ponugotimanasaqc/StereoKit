@@ -2,6 +2,7 @@
 
 #include "../stereokit.h"
 #include "../_stereokit.h"
+#include "../profiler.h"
 #include "../sk_memory.h"
 #include "../asset_types/assets.h"
 #include "../asset_types/mesh_.h"
@@ -430,6 +431,8 @@ bool world_init() {
 ///////////////////////////////////////////
 
 void world_update() {
+	PROFILE_START();
+
 	if (world_is_su_needed(xr_scene_next_req) || world_is_su_needed(xr_scene_last_req)) {
 
 		// Check if we've walked away from the current scene's center
@@ -474,6 +477,8 @@ void world_update() {
 			render_add_mesh(xr_scene_visuals[i].mesh_ref, xr_scene_material, xr_scene_visuals[i].transform);
 		}
 	}
+	
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////

@@ -1,4 +1,5 @@
 #include "../stereokit.h"
+#include "../profiler.h"
 #include "../systems/platform/platform_utils.h"
 #include "../libraries/ferr_hash.h"
 #include "../libraries/qoi.h"
@@ -70,6 +71,7 @@ void tex_load_free(asset_header_t *, void *job_data) {
 ///////////////////////////////////////////
 
 bool32_t tex_load_arr_files(asset_task_t *task, asset_header_t *asset, void *job_data) {
+	PROFILE_START();
 	tex_load_t *data = (tex_load_t *)job_data;
 	tex_t       tex  = (tex_t)asset;
 
@@ -85,6 +87,7 @@ bool32_t tex_load_arr_files(asset_task_t *task, asset_header_t *asset, void *job
 		if (!platform_read_file(assets_file(data->file_names[i]), &data->file_data[i], &data->file_sizes[i])) {
 			log_warnf(tex_msg_load_failed, data->file_names[i]);
 			tex->header.state = asset_state_error_not_found;
+			PROFILE_END();
 			return false;
 		}
 
@@ -93,6 +96,7 @@ bool32_t tex_load_arr_files(asset_task_t *task, asset_header_t *asset, void *job
 		if (!tex_load_image_info(data->file_data[i], data->file_sizes[i], data->is_srgb, &data->color_width, &data->color_height, &color_format)) {
 			log_warnf(tex_msg_invalid_fmt, data->file_names[i]);
 			tex->header.state = asset_state_error_unsupported;
+			PROFILE_END();
 			return false;
 		}
 
@@ -102,6 +106,7 @@ bool32_t tex_load_arr_files(asset_task_t *task, asset_header_t *asset, void *job
 			(format != tex_format_none && format != color_format)) {
 			log_warnf(tex_msg_mismatched_images, data->file_names[i]);
 			tex->header.state = asset_state_error_unsupported;
+			PROFILE_END();
 			return false;
 		}
 		width  = data->color_width;
@@ -111,12 +116,14 @@ bool32_t tex_load_arr_files(asset_task_t *task, asset_header_t *asset, void *job
 
 	tex_set_meta(tex, width, height, format);
 	assets_task_set_complexity(task, width * height * data->file_count);
+	PROFILE_END();
 	return true;
 }
 
 ///////////////////////////////////////////
 
 bool32_t tex_load_arr_parse(asset_task_t *, asset_header_t *asset, void *job_data) {
+	PROFILE_START();
 	tex_load_t *data = (tex_load_t *)job_data;
 	tex_t       tex  = (tex_t)asset;
 
@@ -132,6 +139,7 @@ bool32_t tex_load_arr_parse(asset_task_t *, asset_header_t *asset, void *job_dat
 		if (data->color_data[i] == nullptr) {
 			log_warnf(tex_msg_invalid_fmt, data->file_names[i]);
 			tex->header.state = asset_state_error_unsupported;
+			PROFILE_END();
 			return false;
 		}
 
@@ -143,6 +151,7 @@ bool32_t tex_load_arr_parse(asset_task_t *, asset_header_t *asset, void *job_dat
 			log_warnf("Texture data mismatch: %s", data->file_names[i]);
 			tex_set_fallback(tex, tex_error_texture);
 			tex->header.state = asset_state_error;
+			PROFILE_END();
 			return false;
 		}
 
@@ -150,12 +159,14 @@ bool32_t tex_load_arr_parse(asset_task_t *, asset_header_t *asset, void *job_dat
 		sk_free(data->file_data[i]);
 	}
 	tex->header.state = asset_state_loaded_meta;
+	PROFILE_END();
 	return true;
 }
 
 ///////////////////////////////////////////
 
 bool32_t tex_load_equirect_file(asset_task_t *task, asset_header_t *asset, void *job_data) {
+	PROFILE_START();
 	tex_load_t *data = (tex_load_t *)job_data;
 	tex_t       tex  = (tex_t)asset;
 
@@ -178,12 +189,14 @@ bool32_t tex_load_equirect_file(asset_task_t *task, asset_header_t *asset, void 
 	int32_t tex_size = data->color_height / 2;
 	tex_set_meta(tex, tex_size, tex_size, format);
 	assets_task_set_complexity(task, tex_size * 6);
+	PROFILE_END();
 	return true;
 }
 
 ///////////////////////////////////////////
 
 bool32_t tex_load_equirect_parse(asset_task_t *, asset_header_t *asset, void *job_data) {
+	PROFILE_START();
 	tex_load_t *data = (tex_load_t *)job_data;
 	tex_t       tex  = (tex_t)asset;
 
@@ -200,13 +213,14 @@ bool32_t tex_load_equirect_parse(asset_task_t *, asset_header_t *asset, void *jo
 
 	// Release file memory as soon as we're done with it
 	sk_free(data->file_data[0]);
-
+	PROFILE_END();
 	return true;
 }
 
 ///////////////////////////////////////////
 
 bool32_t tex_load_equirect_upload(asset_task_t *, asset_header_t *asset, void *job_data) {
+	PROFILE_START();
 	tex_load_t *data = (tex_load_t *)job_data;
 	tex_t       tex  = (tex_t)asset;
 
@@ -272,18 +286,21 @@ bool32_t tex_load_equirect_upload(asset_task_t *, asset_header_t *asset, void *j
 	}
 
 	tex->header.state = asset_state_loaded;
+	PROFILE_END();
 	return true;
 }
 
 ///////////////////////////////////////////
 
 bool32_t tex_load_arr_upload(asset_task_t *, asset_header_t *asset, void *job_data) {
+	PROFILE_START();
 	tex_load_t *data = (tex_load_t *)job_data;
 	tex_t       tex  = (tex_t)asset;
 
 	// Create with the data we have
 	tex_set_color_arr(tex, tex->width, tex->height, data->color_data, data->file_count);
-
+	
+	PROFILE_END();
 	return true;
 }
 
@@ -296,12 +313,14 @@ void tex_load_on_failure(asset_header_t *asset, void *) {
 ///////////////////////////////////////////
 
 bool tex_load_image_info(void *data, size_t data_size, bool32_t srgb_data, int32_t *out_width, int32_t *out_height, tex_format_ *out_format) {
+	PROFILE_START();
 	// Check STB image formats
 	int32_t comp;
 	bool success = stbi_info_from_memory((const stbi_uc*)data, (int)data_size, out_width, out_height, &comp) == 1;
 	if (success) {
 		if (stbi_is_hdr_from_memory((stbi_uc *)data, (int)data_size)) *out_format = tex_format_rgba128;
 		else                                                          *out_format = srgb_data ? tex_format_rgba32 : tex_format_rgba32_linear;
+		PROFILE_END();
 		return true;
 	}
 
@@ -313,28 +332,34 @@ bool tex_load_image_info(void *data, size_t data_size, bool32_t srgb_data, int32
 		*out_height = qoi.height;
 		if (qoi.colorspace == QOI_LINEAR) *out_format = tex_format_rgba32_linear;
 		else                              *out_format = srgb_data ? tex_format_rgba32 : tex_format_rgba32_linear;
+		PROFILE_END();
 		return true;
 	}
 
+	PROFILE_END();
 	return false;
 }
 
 ///////////////////////////////////////////
 
 void *tex_load_image_data(void *data, size_t data_size, bool32_t srgb_data, tex_format_ *out_format, int32_t *out_width, int32_t *out_height) {
+	PROFILE_START();
 	int32_t channels = 0;
 	*out_format = srgb_data ? tex_format_rgba32 : tex_format_rgba32_linear;
 
 	// Check for an stbi HDR image
 	if (stbi_is_hdr_from_memory((stbi_uc*)data, (int)data_size)) {
 		*out_format = tex_format_rgba128;
+		PROFILE_END();
 		return (uint8_t *)stbi_loadf_from_memory((stbi_uc *)data, (int)data_size, out_width, out_height, &channels, 4);
 	}
 
 	// Check through stbi's list of image formats
 	void *result = stbi_load_from_memory ((stbi_uc*)data, (int)data_size, out_width, out_height, &channels, 4);
-	if (result != nullptr)
+	if (result != nullptr) {
+		PROFILE_END();
 		return result;
+	}
 
 	// Check for qoi images
 	qoi_desc q_desc = {};
@@ -345,9 +370,11 @@ void *tex_load_image_data(void *data, size_t data_size, bool32_t srgb_data, tex_
 		// If QOI claims it's linear, then we'll go with that!
 		if (q_desc.colorspace == QOI_LINEAR)
 			*out_format = tex_format_rgba32_linear;
+		PROFILE_END();
 		return result;
 	}
 
+	PROFILE_END();
 	return nullptr;
 }
 

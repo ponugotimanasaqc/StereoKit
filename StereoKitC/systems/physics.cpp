@@ -1,6 +1,7 @@
 #include "physics.h"
 #include "../stereokit.h"
 #include "../_stereokit.h"
+#include "../profiler.h"
 #include "../libraries/array.h"
 
 #if !defined(SK_PHYSICS_PASSTHROUGH)
@@ -59,10 +60,11 @@ void physics_shutdown() {
 ///////////////////////////////////////////
 
 void physics_update() {
+	PROFILE_START();
+	
 	// How many physics frames are we going to be calculating this time?
 	int32_t frames = (int32_t)ceil((sk_timev - physics_sim_time) / physics_step);
-	if (frames <= 0)
-		return;
+	if (frames <= 0) { PROFILE_END(); return; }
 	if (frames > (0.5f/physics_step))
 		frames = (int32_t)(0.5f/physics_step);
 
@@ -110,6 +112,8 @@ void physics_update() {
 	}
 #endif
 	solid_moves.clear();
+
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////

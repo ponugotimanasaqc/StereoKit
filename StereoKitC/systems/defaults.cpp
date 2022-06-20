@@ -1,6 +1,7 @@
 #include "defaults.h"
 #include "platform/platform_utils.h"
 #include "../stereokit.h"
+#include "../profiler.h"
 #include "../shaders_builtin/shader_builtin.h"
 #include "../asset_types/font.h"
 #include "../libraries/stb_image.h"
@@ -103,6 +104,8 @@ tex_t dev_texture(const char *id, color128 base_color, float contrast_boost) {
 ///////////////////////////////////////////
 
 bool defaults_init() {
+	PROFILE_START();
+	
 	// Textures
 	sk_default_tex       = defaults_texture(default_id_tex,       {1,1,1,1}         );
 	sk_default_tex_black = defaults_texture(default_id_tex_black, {0,0,0,1}         );
@@ -119,8 +122,10 @@ bool defaults_init() {
 		sk_default_tex_flat  == nullptr ||
 		sk_default_tex_rough == nullptr ||
 		sk_default_tex_devtex== nullptr ||
-		sk_default_tex_error == nullptr)
+		sk_default_tex_error == nullptr) {
+		PROFILE_END();
 		return false;
+	}
 
 	tex_set_loading_fallback(sk_default_tex_devtex);
 	tex_set_error_fallback  (sk_default_tex_error);
@@ -215,8 +220,10 @@ bool defaults_init() {
 		sk_default_shader_ui_box      == nullptr ||
 		sk_default_shader_ui_quadrant == nullptr ||
 		sk_default_shader_sky         == nullptr ||
-		sk_default_shader_lines       == nullptr)
+		sk_default_shader_lines       == nullptr) {
+		PROFILE_END();
 		return false;
+	}
 
 	shader_set_id(sk_default_shader,             default_id_shader);
 	shader_set_id(sk_default_shader_blit,        default_id_shader_blit);
@@ -253,8 +260,10 @@ bool defaults_init() {
 		sk_default_material_font     == nullptr ||
 		sk_default_material_ui       == nullptr ||
 		sk_default_material_ui_box   == nullptr ||
-		sk_default_material_ui_quadrant == nullptr)
+		sk_default_material_ui_quadrant == nullptr) {
+		PROFILE_END();
 		return false;
+	}
 
 	material_set_id(sk_default_material,          default_id_material);
 	material_set_id(sk_default_material_pbr,      default_id_material_pbr);
@@ -276,8 +285,10 @@ bool defaults_init() {
 
 	// Text!
 	sk_default_font = platform_default_font();
-	if (sk_default_font == nullptr)
+	if (sk_default_font == nullptr) {
+		PROFILE_END();
 		return false;
+	}
 	font_set_id(sk_default_font, default_id_font);
 	sk_default_text_style = text_make_style_mat(sk_default_font, 20 * mm2m, sk_default_material_font, color128{ 1,1,1,1 });
 
@@ -324,6 +335,7 @@ bool defaults_init() {
 	sound_set_id(sk_default_grab,    default_id_sound_grab);
 	sound_set_id(sk_default_ungrab,  default_id_sound_ungrab);
 
+	PROFILE_END();
 	return true;
 }
 

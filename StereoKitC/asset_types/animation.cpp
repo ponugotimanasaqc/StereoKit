@@ -3,6 +3,7 @@
 #include "mesh.h"
 #include "../sk_math.h"
 #include "../libraries/stref.h"
+#include "../profiler.h"
 
 namespace sk {
 
@@ -340,8 +341,12 @@ anim_data_t anim_data_copy(anim_data_t *data) {
 ///////////////////////////////////////////
 
 void anim_update() {
+	PROFILE_START();
+	
 	animation_list.each(_anim_update_skin);
 	animation_list.clear();
+
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////

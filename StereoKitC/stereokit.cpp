@@ -25,6 +25,8 @@
 #include "systems/platform/platform.h"
 #include "systems/platform/platform_utils.h"
 
+#include "profiler.h"
+
 namespace sk {
 
 ///////////////////////////////////////////
@@ -117,13 +119,17 @@ app_focus_ sk_app_focus() {
 ///////////////////////////////////////////
 
 void sk_app_update() {
+	PROFILE_START();
 	if (sk_app_update_func != nullptr)
 		sk_app_update_func();
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////
 
 bool32_t sk_init(sk_settings_t settings) {
+	PROFILE_THREAD_NAME("Main");
+
 	sk_settings               = settings;
 	sk_no_flatscreen_fallback = sk_settings.no_flatscreen_fallback;
 	sk_app_name               = sk_settings.app_name == nullptr ? "StereoKit App" : sk_settings.app_name;
@@ -347,6 +353,8 @@ void sk_quit() {
 ///////////////////////////////////////////
 
 bool32_t sk_step(void (*app_update)(void)) {
+	PROFILE_FRAME();
+
 	if (app_system->profile_start_duration == 0)
 		app_system->profile_start_duration = stm_since(app_init_time);
 

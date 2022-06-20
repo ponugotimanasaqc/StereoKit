@@ -7,6 +7,7 @@
 
 #include "../../stereokit.h"
 #include "../../_stereokit.h"
+#include "../../profiler.h"
 #include "../../asset_types/texture.h"
 #include "../../libraries/sokol_time.h"
 #include "../system.h"
@@ -148,6 +149,8 @@ void win32_shutdown() {
 ///////////////////////////////////////////
 
 bool win32_start_flat() {
+	PROFILE_START();
+	
 	sk_info.display_width  = sk_settings.flatscreen_width;
 	sk_info.display_height = sk_settings.flatscreen_height;
 	sk_info.display_type   = display_opaque;
@@ -197,7 +200,7 @@ bool win32_start_flat() {
 	wc.hbrBackground = (HBRUSH)(COLOR_BACKGROUND);
 	wc.lpszClassName = app_name_w;
 	wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-	if (!RegisterClassW(&wc)) { sk_free(app_name_w); return false; }
+	if (!RegisterClassW(&wc)) { sk_free(app_name_w); PROFILE_END(); return false; }
 	win32_hinst = wc.hInstance;
 
 	RECT r;
@@ -220,7 +223,7 @@ bool win32_start_flat() {
 
 	sk_free(app_name_w);
 
-	if( !win32_window ) return false;
+	if (!win32_window) { PROFILE_END(); return false; }
 
 	RECT bounds;
 	GetClientRect(win32_window, &bounds);
@@ -244,6 +247,7 @@ bool win32_start_flat() {
 
 	flatscreen_input_init();
 
+	PROFILE_END();
 	return true;
 }
 
@@ -283,32 +287,41 @@ void win32_step_begin_flat() {
 ///////////////////////////////////////////
 
 void win32_step_end_flat() {
-	skg_draw_begin();
+	{
+		PROFILE_START();
+		skg_draw_begin();
 
-	color128 col = render_get_clear_color_ln();
+		color128 col = render_get_clear_color_ln();
 #if defined(SKG_OPENGL)
-	skg_swapchain_bind(&win32_swapchain);
+		skg_swapchain_bind(&win32_swapchain);
 #else
-	skg_tex_target_bind(&win32_target->tex);
+		skg_tex_target_bind(&win32_target->tex);
 #endif
-	skg_target_clear(true, &col.r);
+		skg_target_clear(true, &col.r);
 
-	input_update_poses(true);
+		input_update_poses(true);
 
-	matrix view = render_get_cam_final        ();
-	matrix proj = render_get_projection_matrix();
-	matrix_inverse(view, view);
-	render_draw_matrix(&view, &proj, 1, render_get_filter());
-	render_clear();
+		matrix view = render_get_cam_final        ();
+		matrix proj = render_get_projection_matrix();
+		matrix_inverse(view, view);
+		render_draw_matrix(&view, &proj, 1, render_get_filter());
+		render_clear();
 
 #if !defined(SKG_OPENGL)
-	// This copies the color data over to the swapchain, and resolves any
-	// multisampling on the primary target texture.
-	skg_tex_copy_to_swapchain(&win32_target->tex, &win32_swapchain);
+		// This copies the color data over to the swapchain, and resolves any
+		// multisampling on the primary target texture.
+		skg_tex_copy_to_swapchain(&win32_target->tex, &win32_swapchain);
 #endif
 
-	win32_render_sys->profile_frame_duration = stm_since(win32_render_sys->profile_frame_start);
-	skg_swapchain_present(&win32_swapchain);
+		win32_render_sys->profile_frame_duration = stm_since(win32_render_sys->profile_frame_start);
+		PROFILE_END();
+	}
+	
+	{
+		PROFILE_START_NAME_COLOR("v-sync", 0x00000001);
+		skg_swapchain_present(&win32_swapchain);
+		PROFILE_END();
+	}
 }
 
 ///////////////////////////////////////////

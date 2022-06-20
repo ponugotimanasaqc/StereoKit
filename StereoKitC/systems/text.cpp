@@ -1,5 +1,6 @@
 #include "text.h"
 #include "../stereokit.h"
+#include "../profiler.h"
 #include "../asset_types/font.h"
 #include "../systems/defaults.h"
 #include "../hierarchy.h"
@@ -497,6 +498,8 @@ float text_add_in_16(const char16_t *text, const matrix &transform, vec2 size, t
 ///////////////////////////////////////////
 
 void text_update() {
+	PROFILE_START();
+	
 	font_update_fonts();
 
 	for (size_t i = 0; i < text_buffers.count; i++) {
@@ -510,6 +513,8 @@ void text_update() {
 		render_add_mesh(buffer.mesh, buffer.material, matrix_identity);
 		buffer.vert_count = 0;
 	}
+
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////

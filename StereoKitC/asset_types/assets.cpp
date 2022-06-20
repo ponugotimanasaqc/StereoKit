@@ -1,6 +1,7 @@
 #include "assets.h"
 #include "../_stereokit.h"
 #include "../sk_memory.h"
+#include "../profiler.h"
 
 #include "mesh.h"
 #include "texture.h"
@@ -330,6 +331,8 @@ bool assets_init() {
 
 array_t<asset_load_callback_t> assets_load_call_list = {};
 void assets_update() {
+	PROFILE_START();
+	
 	// destroy objects where the request came from another thread
 	mtx_lock(&assets_multithread_destroy_lock);
 	for (size_t i = 0; i < assets_multithread_destroy.count; i++) {
@@ -364,6 +367,8 @@ void assets_update() {
 	mtx_unlock(&assets_load_event_lock);
 	assets_load_call_list.each([](const asset_load_callback_t &c) { c.on_load(c.asset, c.context); });
 	assets_load_call_list.clear();
+
+	PROFILE_END();
 }
 
 ///////////////////////////////////////////
@@ -480,12 +485,15 @@ void assets_task_set_complexity(asset_task_t *task, int32_t complexity) {
 ///////////////////////////////////////////
 
 int32_t asset_thread(void *) {
+	PROFILE_THREAD_NAME("Assets");
+	
 	asset_thread_id = thrd_id_current();
 	asset_thread_running = true;
 	asset_thread_enabled = true;
 
 	while (asset_thread_enabled || asset_thread_tasks.count>0) {
 		for (size_t i = 0; i < asset_thread_tasks.count; i++) {
+			PROFILE_START_NAME("Task");
 			asset_task_t *task = asset_thread_tasks[i];
 			// Remove the task if it has completed all its actions.
 			if (task->action_curr >= task->action_count) {
@@ -509,6 +517,8 @@ int32_t asset_thread(void *) {
 				if (task->free_data != nullptr) task->free_data (task->asset, task->load_data);
 				assets_releaseref_threadsafe(task->asset);
 				sk_free(task);
+				
+				PROFILE_END();
 				continue;
 			}
 
@@ -526,6 +536,7 @@ int32_t asset_thread(void *) {
 					// On success, move to the next action in the task!
 					task->action_curr += 1;
 				}
+				PROFILE_END();
 				break;
 			} else if (action->thread_affinity == asset_thread_gpu) {
 				if (task->gpu_started == false) {
@@ -558,9 +569,11 @@ int32_t asset_thread(void *) {
 					}
 					task->gpu_job     = {};
 					task->gpu_started = false;
+					PROFILE_END();
 					break;
 				}
 			}
+			PROFILE_END();
 		}
 		thrd_yield();
 	}
