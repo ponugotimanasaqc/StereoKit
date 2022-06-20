@@ -112,6 +112,17 @@ $dependencies = @(
         @(  [FolderCopy]::new('[config]\', "bin\[archplat]\[config]\", $false, @('lib', 'pdb', 'dll') ),
             [FolderCopy]::new('..\include\reactphysics3d\*', "include\reactphysics3d\", $true, $null) )
     )
+    [Dependency]::new(
+        'TracyClient',
+        'https://github.com/wolfpld/tracy.git',
+        'v',
+        $null,
+        @('-DTRACY_ON_DEMAND=1'),
+        @(  [FolderCopy]::new('[config]\', "bin\[archplat]\[config]\", $false, @('lib', 'pdb', 'dll') ),
+            [FolderCopy]::new('..\',        "include\tracy\",        $false, @('h', 'hpp')),
+            [FolderCopy]::new('..\client\', "include\tracy\client\", $false, @('h', 'hpp')),
+            [FolderCopy]::new('..\common\', "include\tracy\common",  $false, @('h', 'hpp')) )
+    )
 )
 
 #####################################################

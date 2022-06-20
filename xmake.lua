@@ -37,10 +37,26 @@ package_end()
 
 --------------------------------------------------
 
+package("TracyClient")
+    set_homepage("https://github.com/wolfpld/tracy.git")
+    set_description("Profiling tool")
+
+    add_urls("https://github.com/wolfpld/tracy/archive/refs/tags/v$(version).tar.gz")
+    
+    add_deps("cmake")
+    
+    on_install("linux", "windows", "android", function (package)
+        import("package.tools.cmake").install(package, {"-DDYNAMIC_LOADER=OFF"})
+    end)
+package_end()
+
+--------------------------------------------------
+
 -- On Android, we have a precompiled binary provided by Oculus
 if not is_plat("wasm") then
     add_requires("openxr_loader 1.0.22", {verify = false, configs = {vs_runtime="MD", shared=false}})
     add_requires("reactphysics3d 0.9.0", {verify = false, configs = {vs_runtime="MD", shared=false}})
+    add_requires("TracyClient 0.8.1",    {verify = false, configs = {vs_runtime="MD", shared=false}})
 end
 
 option("uwp")
