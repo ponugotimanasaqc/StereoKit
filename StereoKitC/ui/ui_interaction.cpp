@@ -1,6 +1,8 @@
 #include "ui_interaction.h"
 #include "../sk_math.h"
 
+#include <float.h>
+
 namespace sk {
 
 array_t<ui_interactor_t> skui_interactors = { };
