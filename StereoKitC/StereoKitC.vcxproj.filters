@@ -196,6 +196,9 @@
     <ClCompile Include="libraries\cgltf.cpp">
       <Filter>libraries</Filter>
     </ClCompile>
+    <ClCompile Include="ui\ui_theme.cpp">
+      <Filter>ui</Filter>
+    </ClCompile>
     <ClCompile Include="ui\ui_interaction.cpp">
       <Filter>ui</Filter>
     </ClCompile>
@@ -446,6 +449,9 @@
       <Filter>ui</Filter>
     </ClInclude>
     <ClInclude Include="ui\ui_interaction.h">
+      <Filter>ui</Filter>
+    </ClInclude>
+    <ClInclude Include="ui\ui_theme.h">
       <Filter>ui</Filter>
     </ClInclude>
   </ItemGroup>

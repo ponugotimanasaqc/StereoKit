@@ -67,6 +67,21 @@ typedef struct ui_settings_t {
 	float backplate_border;
 } ui_settings_t;
 
+///////////////////////////////////////////
+
+SK_DeclarePrivateType(ui_theme_t);
+
+SK_API ui_theme_t ui_theme_create     ();
+SK_API void       ui_theme_addref     (ui_theme_t theme);
+SK_API void       ui_theme_release    (ui_theme_t theme);
+SK_API void       ui_theme_set        (ui_theme_t theme, ui_vis_ element_visual, mesh_t mesh, vec2 mesh_min_size sk_default(vec2_zero), material_t opt_material sk_default(nullptr), color128 *opt_color_gamma sk_default(nullptr));
+
+SK_API void       ui_set_default_theme(const ui_theme_t theme);
+SK_API void       ui_push_theme       (const ui_theme_t theme);
+SK_API void       ui_pop_theme        ();
+
+///////////////////////////////////////////
+
 SK_API void     ui_quadrant_size_verts (vert_t *ref_vertices, int32_t vertex_count, float overflow_percent);
 SK_API void     ui_quadrant_size_mesh  (mesh_t ref_mesh, float overflow_percent);
 SK_API void     ui_show_volumes        (bool32_t      show);
