@@ -678,6 +678,7 @@ void ui_update() {
 		actor->pos_world.at      = hand->fingers[1][4].position;
 		actor->pos_local.at_prev = actor->pos_world.at_prev;
 		actor->pos_local.at      = actor->pos_world.at;
+		actor->pose_world        = hand->palm;
 		actor->radius            = hand->fingers[1][4].radius;
 		actor->tracked           = hand->tracked_state;
 
@@ -705,6 +706,7 @@ void ui_update() {
 		actor->pos_world.at      = hand->pinch_pt;
 		actor->pos_local.at_prev = actor->pos_world.at_prev;
 		actor->pos_local.at      = hand->pinch_pt;
+		actor->pose_world        = hand->palm;
 		actor->radius            = hand->fingers[1][4].radius;
 		actor->tracked           = hand->tracked_state;
 		actor->activation        = hand->pinch_activation;
@@ -732,6 +734,7 @@ void ui_update() {
 
 		actor->pos_world.ray     = pointer->ray;
 		actor->pos_local.at      = actor->pos_world.at;
+		actor->pose_world        = { pointer->ray.pos, pointer->orientation };
 		actor->radius            = 0;
 		actor->tracked           = pointer->tracked;
 		actor->activation        = pointer->state & button_state_active?1:0;
@@ -2042,7 +2045,7 @@ bool32_t _ui_handle_begin(uint64_t id, pose_t &movement, bounds_t handle, bool32
 		skui_preserve_keyboard_ids_write->add(id);
 	}
 
-	vec3     box_start = handle.center;//   +vec3{ skui_settings.padding, skui_settings.padding, skui_settings.padding };
+	vec3     box_start = handle.center + handle.dimensions * 0.5f + vec3{ skui_settings.padding, skui_settings.padding, skui_settings.padding };
 	vec3     box_size  = handle.dimensions + vec3{ skui_settings.padding, skui_settings.padding, skui_settings.padding } *2;
 	bounds_t box       = bounds_t{box_start, box_size};
 
@@ -2054,6 +2057,53 @@ bool32_t _ui_handle_begin(uint64_t id, pose_t &movement, bounds_t handle, bool32
 	static quat start_handle_rot[2] = { quat_identity,quat_identity };
 	static vec3 start_palm_pos  [2] = {};
 	static quat start_palm_rot  [2] = { quat_identity,quat_identity };
+
+	int32_t interactor;
+	button_state_ focus = button_state_inactive, active = button_state_inactive;
+	ui_interaction_1h(id, ui_interactor_event_pinch, box_start, box_size, box_start, box_size, &focus, &interactor);
+
+	if (interactor != -1) {
+		ui_interactor_t* h = &skui_interactors[interactor];
+		active = ui_interactor_set_active(interactor, id, h->state & button_state_active);
+		// Focus can get lost if the user is dragging outside the box, so set
+		// it to focused if it's still active.
+		focus = ui_interactor_set_focus(interactor, id, active & button_state_active || focus & button_state_active, 10);
+
+		if (active & button_state_just_active) {
+			h->action_pose_world = h->pose_world;
+			start_handle_pos[0] = movement.position;
+			start_handle_rot[0] = movement.orientation;
+		}
+
+		if (active & button_state_active) {
+			quat dest_rot;
+			switch (move_type) {
+			case ui_move_exact: {
+				dest_rot = matrix_transform_quat(to_local, h->pose_world.orientation);
+				dest_rot = quat_difference(start_palm_rot[0], dest_rot);
+			} break;
+			case ui_move_face_user: {
+				vec3 look_from = movement.position; // vec3{ movement.position.x, h->pose_world.position.y, movement.position.z };
+				dest_rot = quat_lookat_up(look_from, matrix_transform_pt(to_local, input_head()->position), matrix_transform_dir(to_local, vec3_up));
+				dest_rot = quat_difference(start_handle_rot[0], dest_rot);
+			} break;
+			case ui_move_pos_only: {
+				dest_rot = quat_identity;
+			} break;
+			case ui_move_none: {
+				dest_rot = quat_identity;
+			} break;
+			default: dest_rot = quat_identity; log_err("Unimplemented move type!"); break;
+			}
+
+			vec3 dest_pos = matrix_transform_pt(to_local, h->pose_world.position) + dest_rot * (start_handle_pos[0] - matrix_transform_pt(to_local, h->action_pose_world.position));
+
+			movement.position    = vec3_lerp (movement.position,    dest_pos, 0.6f);
+			movement.orientation = quat_slerp(movement.orientation, start_handle_rot[0] * dest_rot, 0.4f);
+			ui_pop_surface();
+			ui_push_surface(movement);
+		}
+	}
 
 	/*if (!skui_interact_enabled) {
 		ui_interactor_set_focus(-1, id, false, 0);
