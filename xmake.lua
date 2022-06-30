@@ -39,7 +39,7 @@ package_end()
 
 -- On Android, we have a precompiled binary provided by Oculus
 if not is_plat("wasm") then
-    add_requires("openxr_loader 1.0.22", {verify = false, configs = {vs_runtime="MD", shared=false}})
+    add_requires("openxr_loader 1.0.24", {verify = false, configs = {vs_runtime="MD", shared=false}})
     add_requires("reactphysics3d 0.9.0", {verify = false, configs = {vs_runtime="MD", shared=false}})
 end
 
@@ -66,7 +66,7 @@ target("StereoKitC")
     add_options("uwp")
     add_options("linux-graphics-backend")
     add_options("oculus-openxr")
-    set_version("0.3.6-preview.5")
+    set_version("0.3.7-preview.1")
     set_kind("shared")
     set_symbols("debug")
     if is_plat("windows") then
@@ -89,8 +89,9 @@ target("StereoKitC")
     add_files("StereoKitC/libraries/*.cpp") 
     add_files("StereoKitC/tools/*.cpp") 
     add_files("StereoKitC/systems/*.cpp") 
-    add_files("StereoKitC/systems/hand/*.cpp") 
-    add_files("StereoKitC/systems/platform/*.cpp") 
+    add_files("StereoKitC/hands/*.cpp") 
+    add_files("StereoKitC/platforms/*.cpp") 
+    add_files("StereoKitC/xr_backends/*.cpp") 
     add_files("StereoKitC/asset_types/*.cpp")
     add_files("StereoKitC/ui/*.cpp")
     add_includedirs("StereoKitC/lib/include")
@@ -148,6 +149,9 @@ target("StereoKitC")
 
         print("Copying binary files from "..build_folder.." to "..dist_folder)
 
+        os.mkdir("$(projectdir)/bin/distribute/bin/"..dist_os)
+        os.mkdir("$(projectdir)/bin/distribute/bin/"..dist_os.."/$(arch)")
+        os.mkdir("$(projectdir)/bin/distribute/bin/"..dist_os.."/$(arch)/$(mode)")
         os.cp(build_folder.."*.dll", dist_folder)
         os.cp(build_folder.."*.so",  dist_folder)
         os.cp(build_folder.."*.lib", dist_folder)
@@ -185,7 +189,7 @@ if has_config("tests") and is_plat("linux", "windows", "wasm") then
                 "-s FULL_ES3=1",
                 "-s ALLOW_MEMORY_GROWTH=1",
                 "-s FORCE_FILESYSTEM=1",
-                "--preload-file Examples/Assets",
+                "--preload-file Examples/Assets@/Assets",
                 "-s -Oz",
                 "-s ENVIRONMENT=web")
 

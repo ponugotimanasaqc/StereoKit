@@ -28,7 +28,7 @@ material_t material_find(const char *id) {
 ///////////////////////////////////////////
 
 void material_set_id(material_t material, const char *id) {
-	assets_set_id(material->header, id);
+	assets_set_id(&material->header, id);
 }
 
 ///////////////////////////////////////////
@@ -80,7 +80,7 @@ void material_create_arg_defaults(material_t material, shader_t shader) {
 		material->args.texture_count = meta->resource_count;
 		material->args.textures      = sk_malloc_t(shaderargs_tex_t, meta->resource_count);
 		memset(material->args.textures, 0, sizeof(tex_t) * meta->resource_count);
-		for (size_t i = 0; i < meta->resource_count; i++) {
+		for (uint32_t i = 0; i < meta->resource_count; i++) {
 			shaderargs_tex_t *tex_arg     = &material->args.textures[i];
 			tex_t             default_tex = nullptr;
 
@@ -126,6 +126,8 @@ material_t material_create(shader_t shader) {
 ///////////////////////////////////////////
 
 material_t material_copy(material_t material) {
+	if (material == nullptr) return nullptr;
+
 	// Make a new empty material
 	material_t result = material_create(material->shader);
 	// release any of the default textures for the material.
@@ -178,7 +180,7 @@ material_t material_copy_id(const char *id) {
 ///////////////////////////////////////////
 
 void material_addref(material_t material) {
-	assets_addref(material->header);
+	assets_addref(&material->header);
 }
 
 ///////////////////////////////////////////
@@ -186,7 +188,7 @@ void material_addref(material_t material) {
 void material_release(material_t material) {
 	if (material == nullptr)
 		return;
-	assets_releaseref(material->header);
+	assets_releaseref(&material->header);
 }
 
 ///////////////////////////////////////////
@@ -198,8 +200,8 @@ void material_destroy(material_t material) {
 	}
 	shader_release(material->shader);
 	skg_pipeline_destroy(&material->pipeline);
-	free(material->args.buffer);
-	free(material->args.textures);
+	sk_free(material->args.buffer);
+	sk_free(material->args.textures);
 	*material = {};
 }
 
@@ -241,8 +243,8 @@ void material_set_shader(material_t material, shader_t shader) {
 		if (old_shader != nullptr)
 			shader_release(old_shader);
 		skg_pipeline_destroy(&material->pipeline);
-		free(old_buffer);
-		free(old_textures);
+		sk_free(old_buffer);
+		sk_free(old_textures);
 	}
 
 	material->shader   = shader;
@@ -584,7 +586,7 @@ bool32_t material_has_param(material_t material, const char *name, material_para
 	uint64_t id = hash_fnv64_string(name);
 
 	if (type == material_param_texture) {
-		for (size_t i = 0; i < material->shader->shader.meta->resource_count; i++) {
+		for (uint32_t i = 0; i < material->shader->shader.meta->resource_count; i++) {
 			if (material->shader->shader.meta->resources[i].name_hash == id)
 				return true;
 		}
@@ -626,7 +628,7 @@ bool32_t material_get_param(material_t material, const char *name, material_para
 
 bool32_t material_get_param_id(material_t material, uint64_t id, material_param_ type, void *out_value) {
 	if (type == material_param_texture) {
-		for (size_t i = 0; i < material->shader->shader.meta->resource_count; i++) {
+		for (uint32_t i = 0; i < material->shader->shader.meta->resource_count; i++) {
 			if (material->shader->shader.meta->resources[i].name_hash == id) {
 				memcpy(out_value, &material->args.textures[i], sizeof(tex_t));
 				return true;
@@ -727,7 +729,7 @@ void material_check_tex_changes(material_t material) {
 	// Textures that progressively load or swap from fallbacks will change
 	// their dimensions. SK provides dimensions via the texname_i variable, so
 	// we're making sure that stays in sync here.
-	for (size_t i = 0; i < material->args.texture_count; i++) {
+	for (int32_t i = 0; i < material->args.texture_count; i++) {
 		shaderargs_tex_t *curr = &material->args.textures[i];
 		if (curr->meta_hash != curr->tex->meta_hash) {
 			tex_t physical_tex = curr->tex->fallback == nullptr

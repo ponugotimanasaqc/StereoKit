@@ -1,14 +1,14 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 
 #include "model.h"
-#include "mesh.h"
-#include "texture.h"
+#include "mesh_.h"
+#include "texture_.h"
 #include "../sk_math.h"
 #include "../sk_memory.h"
 #include "../systems/defaults.h"
 #include "../libraries/ferr_hash.h"
 #include "../libraries/stref.h"
-#include "../systems/platform/platform_utils.h"
+#include "../platforms/platform_utils.h"
 #include "../libraries/cgltf.h"
 
 #include <stdio.h>
@@ -31,7 +31,7 @@ void   gltf_add_warning       (array_t<const char *> *warnings, const char *text
 ///////////////////////////////////////////
 
 void gltf_add_warning(array_t<const char *> *warnings, const char *text) {
-	for (size_t i = 0; i < warnings->count; i++) {
+	for (int32_t i = 0; i < warnings->count; i++) {
 		if (warnings->data[i] == text)
 			return;
 	}
@@ -126,7 +126,7 @@ bool gltf_parseskin(mesh_t sk_mesh, cgltf_node *node, const char *filename) {
 				}
 			} else {
 				log_errf("[%s] joint format (%d) not implemented", filename, attr->data->component_type);
-				free(bone_ids);
+				sk_free(bone_ids);
 				bone_ids = nullptr;
 			}
 		} else if (attr->type == cgltf_attribute_type_weights && attr->index == 0) {
@@ -180,7 +180,7 @@ bool gltf_parseskin(mesh_t sk_mesh, cgltf_node *node, const char *filename) {
 						w->w = w->w * sum;
 					}
 				} else {
-					free(floats);
+					sk_free(floats);
 				}
 			} else {
 				log_errf("[%s] weights format (%d) not implemented", filename, attr->data->component_type);
@@ -190,8 +190,8 @@ bool gltf_parseskin(mesh_t sk_mesh, cgltf_node *node, const char *filename) {
 
 	if (!bone_ids || !weights) {
 		log_errf("[%s] mesh skin incomplete", filename);
-		free(bone_ids);
-		free(weights);
+		sk_free(bone_ids);
+		sk_free(weights);
 		return false;
 	}
 
@@ -283,7 +283,7 @@ mesh_t gltf_parsemesh(cgltf_mesh *mesh, int node_id, int primitive_id, const cha
 				} else {
 					log_errf("[%s] Unimplemented vertex position type (%d)", filename, attr->data->type);
 				}
-				free(floats);
+				sk_free(floats);
 			}
 		} else if (attr->type == cgltf_attribute_type_normal) {
 			has_normals = true;
@@ -309,7 +309,7 @@ mesh_t gltf_parsemesh(cgltf_mesh *mesh, int node_id, int primitive_id, const cha
 				} else {
 					log_errf("[%s] Unimplemented vertex normal type (%d)", filename, attr->data->type);
 				}
-				free(floats);
+				sk_free(floats);
 			}
 		} else if (attr->type == cgltf_attribute_type_texcoord) {
 			if (attr->index != 0) {
@@ -334,7 +334,7 @@ mesh_t gltf_parsemesh(cgltf_mesh *mesh, int node_id, int primitive_id, const cha
 				} else {
 					log_errf("[%s] Unimplemented vertex uv type (%d)", filename, attr->data->type);
 				}
-				free(floats);
+				sk_free(floats);
 			}
 		} else if (attr->type == cgltf_attribute_type_color) {
 			if (attr->index != 0) {
@@ -371,42 +371,51 @@ mesh_t gltf_parsemesh(cgltf_mesh *mesh, int node_id, int primitive_id, const cha
 				} else {
 					log_errf("[%s] Unimplemented vertex color type (%d)", filename, attr->data->type);
 				}
-				free(floats);
+				sk_free(floats);
 			}
 		}
 	}
 
 	// Now grab the mesh indices
-	size_t  ind_count = p->indices->count;
-	vind_t *inds      = sk_malloc_t(vind_t, ind_count);
-	if (!p->indices->is_sparse && p->indices->component_type == cgltf_component_type_r_8u) {
-		cgltf_buffer_view *buff   = p->indices->buffer_view;
-		size_t             offset = buff->offset + p->indices->offset;
-		for (size_t v = 0; v < ind_count; v++) {
-			uint8_t *ind = (uint8_t *)(((uint8_t *)buff->buffer->data) + (p->indices->stride * v) + offset);
-			inds[v] = *ind;
-		}
-	} else if (!p->indices->is_sparse && p->indices->component_type == cgltf_component_type_r_16u) {
-		cgltf_buffer_view *buff   = p->indices->buffer_view;
-		size_t             offset = buff->offset + p->indices->offset;
-		for (size_t v = 0; v < ind_count; v++) {
-			uint16_t *ind = (uint16_t *)(((uint8_t *)buff->buffer->data) + (p->indices->stride * v) + offset);
-			inds[v] = *ind;
-		}
-	} else if (!p->indices->is_sparse && p->indices->component_type == cgltf_component_type_r_32u) {
-		cgltf_buffer_view *buff   = p->indices->buffer_view;
-		size_t             offset = buff->offset + p->indices->offset;
-		for (size_t v = 0; v < ind_count; v++) {
-			uint32_t *ind = (uint32_t *)(((uint8_t *)buff->buffer->data) + (p->indices->stride * v) + offset);
-#ifdef SK_32BIT_INDICES
-			inds[v] = *ind;
-#else
-			inds[v] = *ind > 0x0000FFFF ? 0 : (uint16_t)*ind;
-#endif
+	
+	size_t  ind_count = 0;
+	vind_t *inds      = nullptr;
+	if (p->indices == nullptr) {
+		// No indices listed, create indices that map to one index per vertex
+		ind_count = vert_count;
+		inds      = sk_malloc_t(vind_t, ind_count);
+		for (size_t i = 0; i < ind_count; i++) {
+			inds[i] = (vind_t)i;
 		}
 	} else {
-		gltf_add_warning(warnings, "Unimplemented vertex index format");
-	}
+		// Extract indices from the index buffer
+		ind_count = p->indices->count;
+		inds      = sk_malloc_t(vind_t, ind_count);
+		if (!p->indices->is_sparse && p->indices->component_type == cgltf_component_type_r_8u) {
+			cgltf_buffer_view *buff   = p->indices->buffer_view;
+			size_t             offset = buff->offset + p->indices->offset;
+			for (size_t v = 0; v < ind_count; v++) {
+				uint8_t *ind = (uint8_t *)(((uint8_t *)buff->buffer->data) + (p->indices->stride * v) + offset);
+				inds[v] = *ind;
+			}
+		} else if (!p->indices->is_sparse && p->indices->component_type == cgltf_component_type_r_16u) {
+			cgltf_buffer_view *buff   = p->indices->buffer_view;
+			size_t             offset = buff->offset + p->indices->offset;
+			for (size_t v = 0; v < ind_count; v++) {
+				uint16_t *ind = (uint16_t *)(((uint8_t *)buff->buffer->data) + (p->indices->stride * v) + offset);
+				inds[v] = *ind;
+			}
+		} else if (!p->indices->is_sparse && p->indices->component_type == cgltf_component_type_r_32u) {
+			cgltf_buffer_view *buff   = p->indices->buffer_view;
+			size_t             offset = buff->offset + p->indices->offset;
+			for (size_t v = 0; v < ind_count; v++) {
+				uint32_t *ind = (uint32_t *)(((uint8_t *)buff->buffer->data) + (p->indices->stride * v) + offset);
+				inds[v] = *ind;
+			}
+		} else {
+			gltf_add_warning(warnings, "Unimplemented vertex index format");
+		}
+		}
 
 	if (!has_normals) {
 		mesh_calculate_normals(verts, vert_count, inds, (int32_t)ind_count);
@@ -415,8 +424,8 @@ mesh_t gltf_parsemesh(cgltf_mesh *mesh, int node_id, int primitive_id, const cha
 	result = mesh_create();
 	mesh_set_id  (result, id);
 	mesh_set_data(result, verts, vert_count, inds, (int32_t)ind_count);
-	free(verts);
-	free(inds );
+	sk_free(verts);
+	sk_free(inds );
 
 	return result;
 }
@@ -475,7 +484,7 @@ void gltf_apply_sampler(tex_t to_tex, cgltf_sampler *sampler) {
 
 ///////////////////////////////////////////
 
-tex_t gltf_parsetexture(cgltf_data* data, cgltf_texture *tex, const char *filename, bool srgb_data) {
+tex_t gltf_parsetexture(cgltf_data* data, cgltf_texture *tex, const char *filename, bool srgb_data, int32_t priority) {
 	cgltf_image *image = tex->image;
 
 	// Check if we've already loaded this image
@@ -488,7 +497,7 @@ tex_t gltf_parsetexture(cgltf_data* data, cgltf_texture *tex, const char *filena
 
 	if (image->buffer_view != nullptr) {
 		// If it's already a loaded buffer, like in a .glb
-		result = tex_create_mem((void*)((uint8_t*)image->buffer_view->buffer->data + image->buffer_view->offset), image->buffer_view->size, srgb_data);
+		result = tex_create_mem((void*)((uint8_t*)image->buffer_view->buffer->data + image->buffer_view->offset), image->buffer_view->size, srgb_data, priority);
 		if (result == nullptr) 
 			log_warnf("[%s] Couldn't load texture: %s", filename, image->name);
 		else
@@ -504,13 +513,13 @@ tex_t gltf_parsetexture(cgltf_data* data, cgltf_texture *tex, const char *filena
 		cgltf_load_buffer_base64(&options, size, start, &buffer);
 
 		if (buffer != nullptr) {
-			result = tex_create_mem(buffer, size, srgb_data);
+			result = tex_create_mem(buffer, size, srgb_data, priority);
 			tex_set_id(result, id);
-			free(buffer);
+			sk_free(buffer);
 		}
 	} else if (image->uri != nullptr && strstr(image->uri, "://") == nullptr) {
 		// If it's a file path to an external image file
-		result = tex_create_file(id, srgb_data);
+		result = tex_create_file(id, srgb_data, priority);
 	}
 	if (result != nullptr)
 		gltf_apply_sampler(result, tex->sampler);
@@ -572,8 +581,7 @@ material_t gltf_parsematerial(cgltf_data *data, cgltf_material *material, const 
 		tex = material->pbr_metallic_roughness.base_color_texture.texture;
 		if (tex != nullptr && material_has_param(result, "diffuse", material_param_texture)) {
 			if (material->pbr_metallic_roughness.base_color_texture.texcoord != 0) gltf_add_warning(warnings, "StereoKit doesn't support loading multiple texture coordinate channels yet.");
-			tex_t parse_tex = gltf_parsetexture(data, tex, filename, true);
-			tex_set_fallback(parse_tex, sk_default_tex);
+			tex_t parse_tex = gltf_parsetexture(data, tex, filename, true, 10);
 			if (parse_tex != nullptr) {
 				material_set_texture(result, "diffuse", parse_tex);
 				tex_release(parse_tex);
@@ -583,7 +591,7 @@ material_t gltf_parsematerial(cgltf_data *data, cgltf_material *material, const 
 		tex = material->pbr_metallic_roughness.metallic_roughness_texture.texture;
 		if (tex != nullptr && material_has_param(result, "metal", material_param_texture)) {
 			if (material->pbr_metallic_roughness.metallic_roughness_texture.texcoord != 0) gltf_add_warning(warnings, "StereoKit doesn't support loading multiple texture coordinate channels yet.");
-			tex_t parse_tex = gltf_parsetexture(data, tex, filename, false);
+			tex_t parse_tex = gltf_parsetexture(data, tex, filename, false, 13);
 			tex_set_fallback(parse_tex, sk_default_tex_rough);
 			if (parse_tex != nullptr) {
 				material_set_texture(result, "metal", parse_tex);
@@ -605,7 +613,7 @@ material_t gltf_parsematerial(cgltf_data *data, cgltf_material *material, const 
 		tex = material->pbr_specular_glossiness.diffuse_texture.texture;
 		if (tex != nullptr && material_has_param(result, "diffuse", material_param_texture)) {
 			if (material->pbr_specular_glossiness.diffuse_texture.texcoord != 0) gltf_add_warning(warnings, "StereoKit doesn't support multiple texture coordinate channels yet.");
-			tex_t parse_tex = gltf_parsetexture(data, tex, filename, true);
+			tex_t parse_tex = gltf_parsetexture(data, tex, filename, true, 10);
 			if (parse_tex != nullptr) {
 				material_set_texture(result, "diffuse", parse_tex);
 				tex_release(parse_tex);
@@ -628,7 +636,7 @@ material_t gltf_parsematerial(cgltf_data *data, cgltf_material *material, const 
 	tex = material->normal_texture.texture;
 	if (tex != nullptr && material_has_param(result, "normal", material_param_texture)) {
 		if (material->normal_texture.texcoord != 0) gltf_add_warning(warnings, "StereoKit doesn't support multiple texture coordinate channels yet.");
-		tex_t parse_tex = gltf_parsetexture(data, tex, filename, false);
+		tex_t parse_tex = gltf_parsetexture(data, tex, filename, false, 13);
 		tex_set_fallback(parse_tex, sk_default_tex_flat);
 		if (parse_tex != nullptr) {
 			material_set_texture(result, "normal", parse_tex);
@@ -639,7 +647,7 @@ material_t gltf_parsematerial(cgltf_data *data, cgltf_material *material, const 
 	tex = material->occlusion_texture.texture;
 	if (tex != nullptr && material_has_param(result, "occlusion", material_param_texture)) {
 		if (material->occlusion_texture.texcoord != 0) gltf_add_warning(warnings, "StereoKit doesn't support multiple texture coordinate channels yet.");
-		tex_t parse_tex = gltf_parsetexture(data, tex, filename, false);
+		tex_t parse_tex = gltf_parsetexture(data, tex, filename, false, 11);
 		tex_set_fallback(parse_tex, sk_default_tex);
 		if (parse_tex != nullptr) {
 			material_set_texture(result, "occlusion", parse_tex);
@@ -650,7 +658,7 @@ material_t gltf_parsematerial(cgltf_data *data, cgltf_material *material, const 
 	tex = material->emissive_texture.texture;
 	if (tex != nullptr && material_has_param(result, "emission", material_param_texture)) {
 		if (material->emissive_texture.texcoord != 0) gltf_add_warning(warnings, "StereoKit doesn't support multiple texture coordinate channels yet.");
-		tex_t parse_tex = gltf_parsetexture(data, tex, filename, true);
+		tex_t parse_tex = gltf_parsetexture(data, tex, filename, true, 12);
 		tex_set_fallback(parse_tex, sk_default_tex_black);
 		if (parse_tex != nullptr) {
 			material_set_texture(result, "emission", parse_tex);
@@ -718,7 +726,7 @@ anim_t gltf_parseanim(const cgltf_animation *anim, hashmap_t<cgltf_node*, model_
 				quat *rot = (quat*)curve.keyframe_values + offset;
 				quat r = matrix_extract_rotation(gltf_orientation_correction);
 				for (int32_t k = 0; k < curve.keyframe_count; k++)
-					rot[k*skip] = r * rot[k*skip];
+					rot[k*skip] = rot[k*skip] * r;
 			} break;
 			case anim_element_weights: {
 				log_warnf("Animated weights unsupported");
@@ -817,7 +825,7 @@ bool modelfmt_gltf(model_t model, const char *filename, void *file_data, size_t 
 			: cgltf_result_file_not_found;
 	};
 	options.file.release = [](const struct cgltf_memory_options*, const struct cgltf_file_options*, void* data) {
-		free(data);
+		sk_free(data);
 	};
 
 	cgltf_data *data       = nullptr;
@@ -867,7 +875,7 @@ bool modelfmt_gltf(model_t model, const char *filename, void *file_data, size_t 
 		model->anim_data.skeletons.add(skel);
 	}
 
-	for (size_t i = 0; i < warnings.count; i++) {
+	for (int32_t i = 0; i < warnings.count; i++) {
 		log_warnf("[%s] %s", filename, warnings[i]);
 	}
 

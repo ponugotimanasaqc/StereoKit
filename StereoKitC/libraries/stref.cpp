@@ -6,11 +6,15 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#include "../sk_memory.h"
+#define STR_MALLOC sk::sk_malloc
+#define STR_REALLOC sk::sk_realloc
+
 ///////////////////////////////////////////
 
 char *string_copy(const char *aString) {
 	size_t size   = strlen(aString) + 1;
-	char  *result = (char*)malloc(size);
+	char  *result = (char*)STR_MALLOC(size);
 	memcpy(result, aString, size);
 	return result;
 }
@@ -36,7 +40,7 @@ char *string_append(char *aBase, uint32_t aCount, ...) {
 	}
 	va_end(args);
 
-	char *result = (char*)realloc(aBase, baseSize + addSize + 1);
+	char *result = (char*)STR_REALLOC(aBase, baseSize + addSize + 1);
 	char *curr   = result + baseSize;
 	va_start(args, aCount);
 	for (uint32_t i = 0; i < aCount; i++) {
@@ -47,6 +51,19 @@ char *string_append(char *aBase, uint32_t aCount, ...) {
 	}
 	va_end(args);
 
+	return result;
+}
+
+///////////////////////////////////////////
+
+char *string_substr(const char *a, uint32_t start, uint32_t length) {
+	if (length == 0) return nullptr;
+
+	char *result = (char *)STR_MALLOC(length + 1);
+	if (result != nullptr) {
+		memcpy(result, a + start, length);
+		result[length] = '\0';
+	}
 	return result;
 }
 
@@ -101,6 +118,18 @@ bool  string_endswith(const char *a, const char *end, bool case_sensitive) {
 		}
 		return *a == *end;
 	}
+}
+
+///////////////////////////////////////////
+
+bool string_startswith(const char *a, const char *is) {
+	while (*is != '\0') {
+		if (*a == '\0' || *is != *a)
+			return false;
+		a++;
+		is++;
+	}
+	return true;
 }
 
 ///////////////////////////////////////////
@@ -180,7 +209,7 @@ int32_t   stref_lastof(const stref_t &aRef, char aChar) {
 char *stref_copy(const stref_t &aRef) {
 	assert(aRef.temp == false);
 
-	char  *result = (char*)malloc((uint64_t)aRef.length+1);
+	char  *result = (char*)STR_MALLOC((uint64_t)aRef.length+1);
 	memcpy(result, aRef.start, aRef.length);
 	result[aRef.length] = '\0';
 	return result;

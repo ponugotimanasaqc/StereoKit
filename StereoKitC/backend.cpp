@@ -1,6 +1,7 @@
 #include "stereokit.h"
 #include "_stereokit.h"
-#include "systems/platform/platform_utils.h"
+#include "libraries/sk_gpu.h"
+#include "platforms/platform_utils.h"
 
 namespace sk {
 
@@ -36,6 +37,13 @@ openxr_handle_t backend_openxr_get_instance() {
 ///////////////////////////////////////////
 
 openxr_handle_t backend_openxr_get_session() {
+	log_err("backend_openxr_ functions only work when OpenXR is the backend!");
+	return 0;
+}
+
+///////////////////////////////////////////
+
+openxr_handle_t backend_openxr_get_system_id() {
 	log_err("backend_openxr_ functions only work when OpenXR is the backend!");
 	return 0;
 }
@@ -79,6 +87,15 @@ void backend_openxr_ext_request(const char *extension_name) {
 
 ///////////////////////////////////////////
 
+void backend_openxr_add_callback_pre_session_create(void (*on_pre_session_create)(void* context), void* context) {
+	if (sk_initialized) {
+		log_err("backend_openxr_add_callback_pre_session_create must be called BEFORE StereoKit initialization!");
+		return;
+	}
+}
+
+///////////////////////////////////////////
+
 void backend_openxr_composition_layer(void *XrCompositionLayerBaseHeader, int32_t layer_size, int32_t sort_order) {
 	log_err("backend_openxr_ functions only work when OpenXR is the backend!");
 }
@@ -110,5 +127,43 @@ void *backend_android_get_java_vm () { log_err("backend_ platform functions only
 void *backend_android_get_activity() { log_err("backend_ platform functions only work on the correct platform!"); return nullptr; }
 void *backend_android_get_jni_env () { log_err("backend_ platform functions only work on the correct platform!"); return nullptr; }
 #endif
+
+///////////////////////////////////////////
+
+backend_graphics_ backend_graphics_get() {
+#if defined(SKG_DIRECT3D11)
+	return backend_graphics_d3d11;
+#elif defined(SKG_OPENGL)
+	return backend_graphics_none;
+#endif
+}
+
+///////////////////////////////////////////
+
+void *backend_d3d11_get_d3d_device() {
+#if !defined(SKG_DIRECT3D11)
+	log_err("backend_d3d11_ functions only work when D3D11 is the backend!");
+	return nullptr;
+#else
+	void *d3d_device;
+	void *d3d_context;
+	render_get_device((void **)&d3d_device, (void **)&d3d_context);
+	return d3d_device;
+#endif
+}
+
+///////////////////////////////////////////
+
+void *backend_d3d11_get_d3d_context() {
+#if !defined(SKG_DIRECT3D11)
+	log_err("backend_d3d11_ functions only work when D3D11 is the backend!");
+	return nullptr;
+#else
+	void *d3d_device;
+	void *d3d_context;
+	render_get_device((void **)&d3d_device, (void **)&d3d_context);
+	return d3d_context;
+#endif
+}
 
 }

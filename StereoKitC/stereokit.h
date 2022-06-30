@@ -1,11 +1,9 @@
 #pragma once
 
-#define SK_32BIT_INDICES
-
 #define SK_VERSION_MAJOR 0
 #define SK_VERSION_MINOR 3
-#define SK_VERSION_PATCH 6
-#define SK_VERSION_PRERELEASE 5
+#define SK_VERSION_PATCH 7
+#define SK_VERSION_PRERELEASE 1
 
 #if defined(__GNUC__) || defined(__clang__)
 	#define SK_DEPRECATED __attribute__((deprecated))
@@ -276,7 +274,7 @@ typedef enum memory_ {
 	/*This memory is now _yours_ and you must free it yourself! Memory has been
 	  allocated, and the data has been copied over to it. Pricey! But safe.*/
 	memory_copy,
-};
+} memory_;
 
 typedef struct sk_settings_t {
 	const char    *app_name;
@@ -328,6 +326,7 @@ SK_API app_focus_    sk_app_focus          ();
 
 ///////////////////////////////////////////
 
+SK_API double        time_get_raw          ();
 SK_API float         time_getf_unscaled    ();
 SK_API double        time_get_unscaled     ();
 SK_API float         time_getf             ();
@@ -427,6 +426,7 @@ SK_API vec3     matrix_transform_dir      (matrix transform, vec3 direction);
 SK_API ray_t    matrix_transform_ray      (matrix transform, ray_t ray);
 SK_API quat     matrix_transform_quat     (matrix transform, quat rotation);
 SK_API pose_t   matrix_transform_pose     (matrix transform, pose_t pose);
+SK_API matrix   matrix_transpose          (matrix transform);
 SK_API vec3     matrix_to_angles          (const sk_ref(matrix) transform);
 SK_API matrix   matrix_trs                (const sk_ref(vec3) position, const sk_ref(quat) orientation sk_default({0,0,0,1}), const sk_ref(vec3) scale sk_default({1,1,1}));
 SK_API matrix   matrix_t                  (vec3 position);
@@ -543,6 +543,8 @@ SK_API bool32_t bounds_ray_intersect   (bounds_t bounds, ray_t ray, vec3 *out_pt
 SK_API bool32_t bounds_point_contains  (bounds_t bounds, vec3 pt);
 SK_API bool32_t bounds_line_contains   (bounds_t bounds, vec3 pt1, vec3 pt2);
 SK_API bool32_t bounds_capsule_contains(bounds_t bounds, vec3 pt1, vec3 pt2, float radius);
+SK_API bounds_t bounds_grow_to_fit_pt  (bounds_t bounds, vec3 pt);
+SK_API bounds_t bounds_grow_to_fit_box (bounds_t bounds, bounds_t box, const matrix *opt_transform sk_default(nullptr));
 SK_API vec3     ray_point_closest      (ray_t ray, vec3 pt);
 
 ///////////////////////////////////////////
@@ -638,11 +640,26 @@ typedef struct vert_t {
 
 static inline vert_t vert_create(vec3 position, vec3 normal sk_default({ 0,1,0 }), vec2 texture_coordinates sk_default({ 0,0 }), color32 vertex_color sk_default({ 255,255,255,255 })) { vert_t v = { position, normal, texture_coordinates, vertex_color }; return v;  }
 
-#ifdef SK_32BIT_INDICES
 typedef uint32_t vind_t;
-#else
-typedef uint16_t vind_t;
-#endif
+
+/*Culling is discarding an object from the render pipeline!
+  This enum describes how mesh faces get discarded on the graphics
+  card. With culling set to none, you can double the number of pixels
+  the GPU ends up drawing, which can have a big impact on performance.
+  None can be appropriate in cases where the mesh is designed to be
+  'double sided'. Front can also be helpful when you want to flip a
+  mesh 'inside-out'!*/
+typedef enum cull_ {
+	/*Discard if the back of the triangle face is pointing
+	  towards the camera. This is the default behavior.*/
+	cull_back = 0,
+	/*Discard if the front of the triangle face is pointing
+	  towards the camera. This is opposite the default behavior.*/
+	  cull_front,
+	  /*No culling at all! Draw the triangle regardless of which
+		way it's pointing.*/
+		cull_none,
+} cull_;
 
 SK_API mesh_t   mesh_find            (const char *name);
 SK_API mesh_t   mesh_create          ();
@@ -666,7 +683,9 @@ SK_API bounds_t mesh_get_bounds      (mesh_t mesh);
 SK_API bool32_t mesh_has_skin        (mesh_t mesh);
 SK_API void     mesh_set_skin        (mesh_t mesh, const uint16_t *bone_ids_4, int32_t bone_id_4_count, const vec4 *bone_weights, int32_t bone_weight_count, const matrix *bone_resting_transforms, int32_t bone_count);
 SK_API void     mesh_update_skin     (mesh_t mesh, const matrix *bone_transforms, int32_t bone_count);
-SK_API bool32_t mesh_ray_intersect   (mesh_t mesh, ray_t model_space_ray, ray_t* out_pt, uint32_t* out_start_inds sk_default(nullptr));
+// TODO: in 0.4 move cull_mode parameter up to directly after out_pt (both functions)
+SK_API bool32_t mesh_ray_intersect   (mesh_t mesh, ray_t model_space_ray, ray_t* out_pt, uint32_t* out_start_inds sk_default(nullptr), cull_ cull_mode sk_default(cull_back));
+SK_API bool32_t mesh_ray_intersect_bvh(mesh_t mesh, ray_t model_space_ray, ray_t* out_pt, uint32_t* out_start_inds sk_default(nullptr), cull_ cull_mode sk_default(cull_back));
 SK_API bool32_t mesh_get_triangle    (mesh_t mesh, uint32_t triangle_index, vert_t* a, vert_t* b, vert_t* c);
 
 SK_API mesh_t   mesh_gen_plane       (vec2 dimensions, vec3 plane_normal, vec3 plane_top_direction, int32_t subdivisions sk_default(0));
@@ -674,6 +693,7 @@ SK_API mesh_t   mesh_gen_cube        (vec3 dimensions, int32_t subdivisions sk_d
 SK_API mesh_t   mesh_gen_sphere      (float diameter,  int32_t subdivisions sk_default(4));
 SK_API mesh_t   mesh_gen_rounded_cube(vec3 dimensions, float edge_radius, int32_t subdivisions);
 SK_API mesh_t   mesh_gen_cylinder    (float diameter,  float depth, vec3 direction, int32_t subdivisions sk_default(16));
+SK_API mesh_t   mesh_gen_cone        (float diameter,  float depth, vec3 direction, int32_t subdivisions sk_default(16));
 
 ///////////////////////////////////////////
 
@@ -720,52 +740,52 @@ typedef enum tex_format_ {
 	  the time you're dealing with color images! Matches well with the
 	  Color32 struct! If you're storing normals, rough/metal, or
 	  anything else, use Rgba32Linear.*/
-	tex_format_rgba32,
+	tex_format_rgba32 = 1,
 	/*Red/Green/Blue/Transparency data channels, at 8 bits
 	  per-channel in linear color space. This is what you'll want most
 	  of the time you're dealing with color data! Matches well with the
 	  Color32 struct.*/
-	tex_format_rgba32_linear,
-	tex_format_bgra32,
-	tex_format_bgra32_linear,
-	tex_format_rg11b10,
-	tex_format_rgb10a2,
+	tex_format_rgba32_linear = 2,
+	tex_format_bgra32 = 3,
+	tex_format_bgra32_linear = 4,
+	tex_format_rg11b10 = 5,
+	tex_format_rgb10a2 = 6,
 	/*Red/Green/Blue/Transparency data channels, at 16 bits
 	  per-channel! This is not common, but you might encounter it with
 	  raw photos, or HDR images.*/
-	tex_format_rgba64, // TODO: remove during major version update
-	tex_format_rgba64s,
-	tex_format_rgba64f,
+	tex_format_rgba64 = 7, // TODO: remove during major version update
+	tex_format_rgba64s = 8,
+	tex_format_rgba64f = 9,
 	/*Red/Green/Blue/Transparency data channels at 32 bits
 	  per-channel! Basically 4 floats per color, which is bonkers
 	  expensive. Don't use this unless you know -exactly- what you're
 	  doing.*/
-	tex_format_rgba128,
+	tex_format_rgba128 = 10,
 	/*A single channel of data, with 8 bits per-pixel! This
 	  can be great when you're only using one channel, and want to
 	  reduce memory usage. Values in the shader are always 0.0-1.0.*/
-	tex_format_r8,
+	tex_format_r8 = 11,
 	/*A single channel of data, with 16 bits per-pixel! This
 	  is a good format for height maps, since it stores a fair bit of
 	  information in it. Values in the shader are always 0.0-1.0.*/
-	tex_format_r16,
+	tex_format_r16 = 12,
 	/*A single channel of data, with 32 bits per-pixel! This
 	  basically treats each pixel as a generic float, so you can do all
 	  sorts of strange and interesting things with this.*/
-	tex_format_r32,
+	tex_format_r32 = 13,
 	/*A depth data format, 24 bits for depth data, and 8 bits
 	  to store stencil information! Stencil data can be used for things
 	  like clipping effects, deferred rendering, or shadow effects.*/
-	tex_format_depthstencil,
+	tex_format_depthstencil = 14,
 	/*32 bits of data per depth value! This is pretty detailed,
 	  and is excellent for experiences that have a very far view
 	  distance.*/
-	tex_format_depth32,
+	tex_format_depth32 = 15,
 	/*16 bits of depth is not a lot, but it can be enough if
 	  your far clipping plane is pretty close. If you're seeing lots of
 	  flickering where two objects overlap, you either need to bring
 	  your far clip in, or switch to 32/24 bit depth.*/
-	tex_format_depth16,
+	tex_format_depth16 = 16,
 
 	tex_format_rgba64u = tex_format_rgba64,
 } tex_format_;
@@ -818,6 +838,7 @@ SK_API tex_t        tex_create_file_arr     (const char **files, int32_t file_co
 SK_API tex_t        tex_create_cubemap_file (const char *equirectangular_file,       bool32_t srgb_data sk_default(true), spherical_harmonics_t *out_sh_lighting_info sk_default(nullptr), int32_t priority sk_default(10));
 SK_API tex_t        tex_create_cubemap_files(const char **cube_face_file_xxyyzz,     bool32_t srgb_data sk_default(true), spherical_harmonics_t *out_sh_lighting_info sk_default(nullptr), int32_t priority sk_default(10));
 SK_API void         tex_set_id              (tex_t texture, const char *id);
+SK_API void         tex_set_fallback        (tex_t texture, tex_t fallback);
 SK_API void         tex_set_surface         (tex_t texture, void *native_surface, tex_type_ type, int64_t native_fmt, int32_t width, int32_t height, int32_t surface_count);
 SK_API void         tex_addref              (tex_t texture);
 SK_API void         tex_release             (tex_t texture);
@@ -840,6 +861,8 @@ SK_API void         tex_set_address         (tex_t texture, tex_address_ address
 SK_API tex_address_ tex_get_address         (tex_t texture);
 SK_API void         tex_set_anisotropy      (tex_t texture, int32_t anisotropy_level sk_default(4));
 SK_API int32_t      tex_get_anisotropy      (tex_t texture);
+SK_API void         tex_set_loading_fallback(tex_t loading_texture);
+SK_API void         tex_set_error_fallback  (tex_t error_texture);
 SK_API spherical_harmonics_t tex_get_cubemap_lighting(tex_t cubemap_texture);
 
 ///////////////////////////////////////////
@@ -884,25 +907,6 @@ typedef enum transparency_ {
 	  particles or lighting effects.*/
 	transparency_add,
 } transparency_;
-
-/*Culling is discarding an object from the render pipeline!
-  This enum describes how mesh faces get discarded on the graphics
-  card. With culling set to none, you can double the number of pixels
-  the GPU ends up drawing, which can have a big impact on performance.
-  None can be appropriate in cases where the mesh is designed to be
-  'double sided'. Front can also be helpful when you want to flip a
-  mesh 'inside-out'!*/
-typedef enum cull_ {
-	/*Discard if the back of the triangle face is pointing
-	  towards the camera. This is the default behavior.*/
-	cull_back = 0,
-	/*Discard if the front of the triangle face is pointing
-	  towards the camera. This is opposite the default behavior.*/
-	cull_front,
-	/*No culling at all! Draw the triangle regardless of which
-	  way it's pointing.*/
-	cull_none,
-} cull_;
 
 /*Depth test describes how this material looks at and responds
   to depth information in the zbuffer! The default is Less, which means
@@ -1201,7 +1205,10 @@ SK_API void          model_draw                    (model_t model, matrix transf
 SK_API void          model_recalculate_bounds      (model_t model);
 SK_API void          model_set_bounds              (model_t model, const sk_ref(bounds_t) bounds);
 SK_API bounds_t      model_get_bounds              (model_t model);
-SK_API bool32_t      model_ray_intersect           (model_t model, ray_t model_space_ray, ray_t *out_pt);
+SK_API bool32_t      model_ray_intersect           (model_t model, ray_t model_space_ray, ray_t* out_pt, cull_ cull_mode sk_default(cull_back));
+SK_API bool32_t      model_ray_intersect_bvh       (model_t model, ray_t model_space_ray, ray_t *out_pt, cull_ cull_mode sk_default(cull_back));
+// TODO: in 0.4 move cull_mode parameter up to directly after out_pt
+SK_API bool32_t      model_ray_intersect_bvh_detailed(model_t model, ray_t model_space_ray, ray_t *out_pt, mesh_t *out_mesh sk_default(nullptr), matrix *out_matrix sk_default(nullptr), uint32_t* out_start_inds sk_default(nullptr), cull_ cull_mode sk_default(cull_back));
 
 SK_API void          model_step_anim               (model_t model);
 SK_API bool32_t      model_play_anim               (model_t model, const char *animation_name, anim_mode_ mode);
@@ -1576,6 +1583,7 @@ typedef struct hand_t {
 
 typedef struct controller_t {
 	pose_t        pose;
+	pose_t        palm;
 	pose_t        aim;
 	button_state_ tracked;
 	track_state_  tracked_pos;
@@ -1599,6 +1607,8 @@ typedef struct mouse_t {
 /*A collection of system key codes, representing keyboard
   characters and mouse buttons. Based on VK codes.*/
 typedef enum key_ {
+	/*Doesn't represent a key, generally means this item has not been set to
+	  any particular value!*/
 	key_none      = 0x00,
 	/*Left mouse button.*/
 	key_mouse_left = 0x01,
@@ -1813,7 +1823,7 @@ typedef enum key_ {
 	key_MAX = 0xFF,
 } key_;
 
-SK_API int                   input_pointer_count  (input_source_ filter sk_default(input_source_any));
+SK_API int32_t               input_pointer_count  (input_source_ filter sk_default(input_source_any));
 SK_API pointer_t             input_pointer        (int32_t index, input_source_ filter sk_default(input_source_any));
 SK_API const hand_t         *input_hand           (handed_ hand);
 SK_API void                  input_hand_override  (handed_ hand, const hand_joint_t *hand_joints);
@@ -1907,22 +1917,39 @@ typedef enum backend_platform_ {
 	backend_platform_web,
 } backend_platform_;
 
+/*This describes the graphics API thatStereoKit is using for rendering.*/
+typedef enum backend_graphics_ {
+	/*An invalid default value. Right now, this may likely indicate a variety
+	  of OpenGL.*/
+	backend_graphics_none,
+	/*DirectX's Direct3D11 is used for rendering!*/
+	backend_graphics_d3d11,
+} backend_graphics_;
+
 typedef uint64_t openxr_handle_t;
 
-SK_API backend_xr_type_  backend_xr_get_type        ();
-SK_API openxr_handle_t   backend_openxr_get_instance();
-SK_API openxr_handle_t   backend_openxr_get_session ();
-SK_API openxr_handle_t   backend_openxr_get_space   ();
-SK_API int64_t           backend_openxr_get_time    ();
+SK_API backend_xr_type_  backend_xr_get_type                ();
+SK_API openxr_handle_t   backend_openxr_get_instance        ();
+SK_API openxr_handle_t   backend_openxr_get_session         ();
+SK_API openxr_handle_t   backend_openxr_get_system_id       ();
+SK_API openxr_handle_t   backend_openxr_get_space           ();
+SK_API int64_t           backend_openxr_get_time            ();
 SK_API int64_t           backend_openxr_get_eyes_sample_time();
-SK_API void             *backend_openxr_get_function(const char *function_name);
-SK_API bool32_t          backend_openxr_ext_enabled (const char *extension_name);
-SK_API void              backend_openxr_ext_request (const char *extension_name);
-SK_API void              backend_openxr_composition_layer(void *XrCompositionLayerBaseHeader, int32_t layer_size, int32_t sort_order);
-SK_API backend_platform_ backend_platform_get        ();
-SK_API void             *backend_android_get_java_vm ();
-SK_API void             *backend_android_get_activity();
-SK_API void             *backend_android_get_jni_env ();
+SK_API void             *backend_openxr_get_function        (const char *function_name);
+SK_API bool32_t          backend_openxr_ext_enabled         (const char *extension_name);
+SK_API void              backend_openxr_ext_request         (const char *extension_name);
+SK_API void              backend_openxr_composition_layer   (void *XrCompositionLayerBaseHeader, int32_t layer_size, int32_t sort_order);
+
+SK_API void              backend_openxr_add_callback_pre_session_create(void (*on_pre_session_create)(void* context), void* context);
+
+SK_API backend_platform_ backend_platform_get         ();
+SK_API void             *backend_android_get_java_vm  ();
+SK_API void             *backend_android_get_activity ();
+SK_API void             *backend_android_get_jni_env  ();
+
+SK_API backend_graphics_ backend_graphics_get         ();
+SK_API void             *backend_d3d11_get_d3d_device ();
+SK_API void             *backend_d3d11_get_d3d_context();
 
 ///////////////////////////////////////////
 
@@ -1978,6 +2005,8 @@ SK_CONST char *default_id_tex_black            = "default/tex_black";
 SK_CONST char *default_id_tex_gray             = "default/tex_gray";
 SK_CONST char *default_id_tex_flat             = "default/tex_flat";
 SK_CONST char *default_id_tex_rough            = "default/tex_rough";
+SK_CONST char *default_id_tex_devtex           = "default/tex_devtex";
+SK_CONST char *default_id_tex_error            = "default/tex_error";
 SK_CONST char *default_id_cubemap              = "default/cubemap";
 SK_CONST char *default_id_font                 = "default/font";
 SK_CONST char *default_id_mesh_quad            = "default/mesh_quad";
@@ -1988,6 +2017,7 @@ SK_CONST char *default_id_mesh_lefthand        = "default/mesh_lefthand";
 SK_CONST char *default_id_mesh_righthand       = "default/mesh_righthand";
 SK_CONST char *default_id_mesh_ui_button       = "default/mesh_ui_button";
 SK_CONST char *default_id_shader               = "default/shader";
+SK_CONST char *default_id_shader_blit          = "default/shader_blit";
 SK_CONST char *default_id_shader_pbr           = "default/shader_pbr";
 SK_CONST char *default_id_shader_pbr_clip      = "default/shader_pbr_clip";
 SK_CONST char *default_id_shader_unlit         = "default/shader_unlit";
@@ -2016,11 +2046,12 @@ SK_CONST char *default_id_sound_ungrab         = "default/sound_ungrab";
 
   // This will look like 'M.i.P-rcr', or 'M.i.P' if r is 0
 #if SK_VERSION_PRERELEASE != 0
-#define SK_VERSION (SK_STR(SK_VERSION_MAJOR) "." SK_STR(SK_VERSION_MINOR) "." SK_STR(SK_VERSION_PATCH) "-preview" SK_STR(SK_VERSION_PRERELEASE))
+#define SK_VERSION SK_STR(SK_VERSION_MAJOR) "." SK_STR(SK_VERSION_MINOR) "." SK_STR(SK_VERSION_PATCH) "-preview." SK_STR(SK_VERSION_PRERELEASE)
 #else
-#define SK_VERSION (SK_STR(SK_VERSION_MAJOR) "." SK_STR(SK_VERSION_MINOR) "." SK_STR(SK_VERSION_PATCH))
+#define SK_VERSION SK_STR(SK_VERSION_MAJOR) "." SK_STR(SK_VERSION_MINOR) "." SK_STR(SK_VERSION_PATCH)
 #endif
 
   // A version in hex looks like: 0xMMMMiiiiPPPPrrrr
   // In order of Major.mInor.Patch.pre-Release
 #define SK_VERSION_ID ( ((uint64_t)SK_VERSION_MAJOR << 48) | ((uint64_t)SK_VERSION_MINOR << 32) | ((uint64_t)SK_VERSION_PATCH << 16) | (uint64_t)(SK_VERSION_PRERELEASE) )
+
