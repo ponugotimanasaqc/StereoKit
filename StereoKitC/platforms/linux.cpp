@@ -6,6 +6,7 @@
 
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
+#include <X11/extensions/Xfixes.h>
 
 #include "../xr_backends/openxr.h"
 #include "flatscreen_input.h"
@@ -18,14 +19,6 @@
 #include "../libraries/sk_gpu.h"
 #include "../libraries/sokol_time.h"
 #include "../libraries/unicode.h"
-
-#if defined(SKG_LINUX_EGL)
-
-extern EGLDisplay egl_display;
-extern EGLContext egl_context;
-extern EGLConfig  egl_config;
-
-#endif
 
 namespace sk {
 
@@ -47,6 +40,9 @@ Colormap                x_cmap;
 XSetWindowAttributes    x_swa;
 Window                  x_win;
 Window                  x_root;
+
+// Are we X or XWayland?
+bool xwayland = false;
 
 ///////////////////////////////////////////
 // Start input
@@ -400,9 +396,26 @@ bool setup_egl_flat() {
 
 ///////////////////////////////////////////
 
+bool check_wayland() {
+	char* sess_type = getenv("XDG_SESSION_TYPE");
+	if (sess_type == NULL) {
+		// We don't want none of this; just assume it's regular X11
+		return false;
+	}
+	const char* wayland = "wayland";
+	if (strcmp(sess_type, wayland) == 0) { // if they're equal,
+		return true;
+	}
+	return false;
+}
+
+///////////////////////////////////////////
+
 bool linux_init() {
 	linux_render_sys = systems_find("FrameRender");
 	linux_init_key_lookups();
+
+	xwayland = check_wayland();
 
 	#if !defined(SKG_LINUX_EGL)
 
@@ -471,7 +484,20 @@ float linux_get_scroll() {
 ///////////////////////////////////////////
 
 void linux_set_cursor(vec2 window_pos) {
+	// This XFixesHideCursor/ShowCursor fix is really bizarre.
+	// I tracked this down through https://developer.blender.org/T53004#467383
+	// and https://github.com/blender/blender/blob/a8f7d41d3898a8d3ae8afb4f95ea9f4f44db2a69/intern/ghost/intern/GHOST_SystemX11.cpp#L1680 .
+	// I don't know why this works, but it definitely does - the pointer correctly warps to the right spot as of July 2022.
+
+	if (xwayland){
+		XFixesHideCursor(x_dpy, x_win);
+	}
+
 	XWarpPointer(x_dpy, x_win, x_win, 0, 0, 0, 0, window_pos.x,window_pos.y);
+
+	if (xwayland){
+		XFixesShowCursor(x_dpy, x_win);
+	}
 	XFlush(x_dpy);
 }
 

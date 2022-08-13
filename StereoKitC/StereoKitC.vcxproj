@@ -48,7 +48,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(ProjectDir)lib\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)lib\bin\$(Platform)\$(Configuration);$(ProjectDir)lib\bin\$(Platform);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)lib\bin\$(LibrariesArchitecture)\$(Configuration);$(ProjectDir)lib\bin\$(LibrariesArchitecture);$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)bin\$(Platform)_$(Configuration)\$(ProjectName)\</OutDir>
     <IntDir>$(SolutionDir)bin\intermediate\$(Platform)_$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
@@ -277,6 +277,7 @@ xcopy "$(ProjectDir)stereokit_ui.h" "$(SolutionDir)bin\distribute\include\" /d /
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Tools\include\stereokit.hlsli" />
+    <None Include="..\Tools\include\stereokit_pbr.hlsli" />
     <None Include="cpp.hint" />
     <None Include="packages.config" />
     <None Include="shaders_builtin\shader_builtin_default.hlsl" />

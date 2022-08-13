@@ -1481,7 +1481,6 @@ bool32_t ui_button_img_at_g(const C* text, sprite_t image, ui_btn_layout_ image_
 	if (image_size>0) {
 		color128 final_color = skui_tint;
 		if (!skui_enabled_stack.last()) final_color = final_color * color128{ .5f, .5f, .5f, 1 };
-		final_color.a = fmaxf(activation, color_blend);
 	
 		sprite_draw_at(image, matrix_ts(image_at, { image_size, image_size, image_size }), image_align, color_to_32( final_color ));
 		if (image_layout != ui_btn_layout_center_no_text)
@@ -1549,7 +1548,7 @@ bool32_t ui_button_img_sz_g(const C *text, sprite_t image, ui_btn_layout_ image_
 	vec3 final_pos;
 	vec2 final_size;
 
-	ui_layout_reserve_sz(size, true, &final_pos, &final_size);
+	ui_layout_reserve_sz(size, false, &final_pos, &final_size);
 	return ui_button_img_at(text, image, image_layout, final_pos, final_size);
 }
 bool32_t ui_button_img_sz   (const char     *text, sprite_t image, ui_btn_layout_ image_layout, vec2 size) { return ui_button_img_sz_g<char    >(text, image, image_layout, size); }

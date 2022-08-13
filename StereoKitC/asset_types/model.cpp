@@ -28,6 +28,12 @@ void model_set_id(model_t model, const char *id) {
 
 ///////////////////////////////////////////
 
+const char* model_get_id(const model_t model) {
+	return model->header.id_text;
+}
+
+///////////////////////////////////////////
+
 model_t model_find(const char *id) {
 	model_t result = (model_t)assets_find(id, asset_type_model);
 	if (result != nullptr) {
@@ -118,9 +124,12 @@ model_t model_create_file(const char *filename, shader_t shader) {
 	if (result != nullptr)
 		return result;
 
-	void  *data;
-	size_t length;
-	if (!platform_read_file(assets_file(filename), &data, &length)) {
+	void*    data;
+	size_t   length;
+	char*    asset_filename = assets_file(filename);
+	bool32_t loaded         = platform_read_file(asset_filename, &data, &length);
+	sk_free(asset_filename);
+	if (!loaded) {
 		log_warnf("Model file failed to load: %s", filename);
 		return nullptr;
 	}
@@ -776,7 +785,7 @@ int32_t model_anim_find(model_t model, const char *animation_name) {
 	for (int32_t i = 0; i < model->anim_data.anims.count; i++)
 		if (string_eq(model->anim_data.anims[i].name, animation_name))
 			return i;
-	return false;
+	return -1;
 }
 
 ///////////////////////////////////////////

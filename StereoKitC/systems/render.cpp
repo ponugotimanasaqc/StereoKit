@@ -37,7 +37,7 @@ struct render_item_t {
 	XMMATRIX    transform;
 	color128    color;
 	uint64_t    sort_id;
-	skg_mesh_t *mesh;
+	mesh_t      mesh;
 	material_t  material;
 	int32_t     mesh_inds;
 	uint16_t    layer;
@@ -453,18 +453,23 @@ color128 render_get_clear_color_ln() {
 
 void render_add_mesh(mesh_t mesh, material_t material, const matrix &transform, color128 color, render_layer_ layer) {
 	render_item_t item;
-	item.mesh     = &mesh->gpu_mesh;
-	item.mesh_inds= mesh->ind_draw;
-	item.material = material;
-	item.color    = color;
-	item.sort_id  = render_queue_id(material, mesh);
-	item.layer    = (uint16_t)layer;
+	item.mesh      = mesh;
+	item.mesh_inds = mesh->ind_draw;
+	item.color     = color;
+	item.layer     = (uint16_t)layer;
 	if (hierarchy_enabled) {
 		matrix_mul(transform, hierarchy_stack.last().transform, item.transform);
 	} else {
 		math_matrix_to_fast(transform, &item.transform);
 	}
-	render_list_add(&item);
+
+	material_t curr = material;
+	while (curr != nullptr) {
+		item.material = curr;
+		item.sort_id  = render_queue_id(material, mesh);
+		render_list_add(&item);
+		curr = curr->chain;
+	}
 }
 
 ///////////////////////////////////////////
@@ -483,14 +488,19 @@ void render_add_model(model_t model, const matrix &transform, color128 color, re
 		if (vis->visible == false) continue;
 		
 		render_item_t item;
-		item.mesh     = &vis->mesh->gpu_mesh;
-		item.mesh_inds= vis->mesh->ind_count;
-		item.material = vis->material;
-		item.color    = color;
-		item.sort_id  = render_queue_id(item.material, vis->mesh);
-		item.layer    = (uint16_t)layer;
+		item.mesh      = vis->mesh;
+		item.mesh_inds = vis->mesh->ind_count;
+		item.color     = color;
+		item.layer     = (uint16_t)layer;
 		matrix_mul(vis->transform_model, root, item.transform);
-		render_list_add(&item);
+
+		material_t curr = vis->material;
+		while (curr != nullptr) {
+			item.material = curr;
+			item.sort_id = render_queue_id(item.material, vis->mesh);
+			render_list_add(&item);
+			curr = curr->chain;
+		}
 	}
 
 	if (model->transforms_changed && model->anim_data.skeletons.count > 0) {
@@ -526,10 +536,11 @@ void render_draw_queue(const matrix *views, const matrix *projections, render_la
 	memcpy(render_global_buffer.lighting, render_lighting, sizeof(vec4) * 9);
 	render_global_buffer.time       = time_getf();
 	render_global_buffer.view_count = view_count;
-	vec3 tip = input_hand(handed_right)->tracked_state & button_state_active ? input_hand(handed_right)->fingers[1][4].position : vec3{0,-1000,0};
-	render_global_buffer.fingertip[0] = { tip.x, tip.y, tip.z, 0 };
-	tip = input_hand(handed_left)->tracked_state & button_state_active ? input_hand(handed_left)->fingers[1][4].position : vec3{0,-1000,0};
-	render_global_buffer.fingertip[1] = { tip.x, tip.y, tip.z, 0 };
+	for (int32_t i = 0; i < handed_max; i++) {
+		const hand_t* hand = input_hand((handed_)i);
+		vec3          tip  = hand->tracked_state & button_state_active ? hand->fingers[1][4].position : vec3{ 0,-1000,0 };
+		render_global_buffer.fingertip[i] = { tip.x, tip.y, tip.z, 0 };
+	}
 
 	// TODO: This is a little odd now that textures like this go through the
 	// render_global_textures system.
@@ -967,12 +978,16 @@ void render_list_pop() {
 
 void render_list_add(const render_item_t *item) {
 	render_lists[render_list_active].queue.add(*item);
+	assets_addref(&item->material->header);
+	assets_addref(&item->mesh->header);
 }
 
 ///////////////////////////////////////////
 
 void render_list_add_to(render_list_t list, const render_item_t *item) {
 	render_lists[list].queue.add(*item);
+	assets_addref(&item->material->header);
+	assets_addref(&item->mesh->header);
 }
 
 ///////////////////////////////////////////
@@ -1021,7 +1036,7 @@ void render_list_execute(render_list_t list_id, render_layer_ filter, uint32_t v
 		// If the material/mesh changed
 		else if (run_start->material != item->material || run_start->mesh != item->mesh) {
 			// Render the run that just ended
-			render_list_execute_run(list, run_start->material, run_start->mesh, run_start->mesh_inds, view_count);
+			render_list_execute_run(list, run_start->material, &run_start->mesh->gpu_mesh, run_start->mesh_inds, view_count);
 			render_instance_list.clear();
 			// Start the next run
 			run_start = item;
@@ -1034,7 +1049,7 @@ void render_list_execute(render_list_t list_id, render_layer_ filter, uint32_t v
 	// Render the last remaining run, which won't be triggered by the loop's
 	// conditions
 	if (render_instance_list.count > 0) {
-		render_list_execute_run(list, run_start->material, run_start->mesh, run_start->mesh_inds, view_count);
+		render_list_execute_run(list, run_start->material, &run_start->mesh->gpu_mesh, run_start->mesh_inds, view_count);
 		render_instance_list.clear();
 	}
 
@@ -1070,7 +1085,7 @@ void render_list_execute_material(render_list_t list_id, render_layer_ filter, u
 		// If the mesh changed
 		else if (run_start->mesh != item->mesh) {
 			// Render the run that just ended
-			render_list_execute_run(list, override_material, run_start->mesh, run_start->mesh_inds, view_count);
+			render_list_execute_run(list, override_material, &run_start->mesh->gpu_mesh, run_start->mesh_inds, view_count);
 			render_instance_list.clear();
 			// Start the next run
 			run_start = item;
@@ -1083,7 +1098,7 @@ void render_list_execute_material(render_list_t list_id, render_layer_ filter, u
 	// Render the last remaining run, which won't be triggered by the loop's
 	// conditions
 	if (render_instance_list.count > 0) {
-		render_list_execute_run(list, override_material, run_start->mesh, run_start->mesh_inds, view_count);
+		render_list_execute_run(list, override_material, &run_start->mesh->gpu_mesh, run_start->mesh_inds, view_count);
 		render_instance_list.clear();
 	}
 
@@ -1113,6 +1128,10 @@ void render_list_prep(render_list_t list_id) {
 ///////////////////////////////////////////
 
 void render_list_clear(render_list_t list) {
+	for (int32_t i = 0; i < render_lists[list].queue.count; i++) {
+		assets_releaseref(&render_lists[list].queue[i].material->header);
+		assets_releaseref(&render_lists[list].queue[i].mesh->header);
+	}
 	render_lists[list].queue.clear();
 	render_lists[list].stats   = {};
 	render_lists[list].prepped = false;
@@ -1212,12 +1231,12 @@ void radix_sort7(render_item_t *a, size_t count) {
 			render_item_t value = from[i];
 			size_t        index = (value.sort_id >> shift) & RADIX_MASK;
 			*queue_ptrs[index]++ = value;
-#ifdef _WIN32
-#if defined(_M_ARM) || defined(_M_ARM64)
+#ifdef _MSC_VER
+	#if defined(_M_ARM) || defined(_M_ARM64)
 			__prefetch (queue_ptrs[index] + 1);
-#elif !defined(WINDOWS_UWP)
+	#else
 			_m_prefetch(queue_ptrs[index] + 1);
-#endif
+	#endif
 #else
 			__builtin_prefetch(queue_ptrs[index] + 1);
 #endif

@@ -808,7 +808,7 @@ void gltf_add_node(model_t model, shader_t shader, model_node_id parent, const c
 	if (node_id == -1) {
 		node_id = model_node_add_child(model, parent, node->name, transform, nullptr, nullptr);
 	}
-	node_map->add(node, node_id);
+	node_map->set(node, node_id);
 
 	for (size_t i = 0; i < node->children_count; i++) {
 		gltf_add_node(model, shader, node_id, filename, data, node->children[i], node_map, warnings);
@@ -828,9 +828,7 @@ bool modelfmt_gltf(model_t model, const char *filename, void *file_data, size_t 
 		sk_free(data);
 	};
 
-	cgltf_data *data       = nullptr;
-	const char *model_file = assets_file(filename);
-
+	cgltf_data*  data   = nullptr;
 	cgltf_result result = cgltf_parse(&options, file_data, file_size, &data);
 	if (result != cgltf_result_success) {
 		log_diagf("[%s] gltf parse err %d", filename, result);
@@ -838,7 +836,9 @@ bool modelfmt_gltf(model_t model, const char *filename, void *file_data, size_t 
 		return false;
 	}
 
+	char* model_file = assets_file(filename);
 	result = cgltf_load_buffers(&options, data, model_file);
+	sk_free(model_file);
 	if (result != cgltf_result_success) {
 		log_diagf("[%s] gltf buffer load err %d", filename, result);
 		cgltf_free(data);

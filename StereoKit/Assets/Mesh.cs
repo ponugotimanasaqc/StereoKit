@@ -18,9 +18,18 @@ namespace StereoKit
 	/// Mesh indices are stored as unsigned ints, so you can have a mesh with
 	/// a fudgeton of verts! 4 billion or so :)
 	/// </summary>
-	public class Mesh
+	public class Mesh : IAsset
 	{
 		internal IntPtr _inst;
+
+		/// <summary>Gets or sets the unique identifier of this asset resource!
+		/// This can be helpful for debugging, managine your assets, or finding
+		/// them later on!</summary>
+		public string Id
+		{
+			get => Marshal.PtrToStringAnsi(NativeAPI.mesh_get_id(_inst));
+			set => NativeAPI.mesh_set_id(_inst, value);
+		}
 
 		/// <summary>This is a bounding box that encapsulates the Mesh! It's
 		/// used for collision, visibility testing, UI layout, and probably 
@@ -66,6 +75,7 @@ namespace StereoKit
 			if (_inst == IntPtr.Zero)
 				Log.Err("Received an empty mesh!");
 		}
+		/// <summary>Release reference to the StereoKit asset.</summary>
 		~Mesh()
 		{
 			if (_inst != IntPtr.Zero)

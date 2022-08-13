@@ -244,6 +244,8 @@ bool platform_get_cursor(vec2 &out_pos) {
 
 ///////////////////////////////////////////
 
+// Returns true if the platform succeeded at moving the cursor; returns false otherwise.
+// Should currently only return false under Linux/XWayland.
 void platform_set_cursor(vec2 window_pos) {
 #if defined(SK_OS_WINDOWS_UWP)
 	uwp_set_mouse(window_pos);

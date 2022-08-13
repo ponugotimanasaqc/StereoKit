@@ -67,8 +67,9 @@ XrSystemId     xr_system_id     = XR_NULL_SYSTEM_ID;
 XrTime         xr_time          = 0;
 XrTime         xr_eyes_sample_time = 0;
 
-array_t<const char*> xr_exts_user   = {};
-array_t<uint64_t>    xr_exts_loaded = {};
+array_t<const char*> xr_exts_user    = {};
+array_t<uint64_t>    xr_exts_loaded  = {};
+bool32_t             xr_minimum_exts = false;
 
 array_t<context_callback_t> xr_callbacks_pre_session_create = {};
 
@@ -210,7 +211,7 @@ bool openxr_init() {
 	}
 #endif
 
-	array_t<const char *> extensions = openxr_list_extensions(xr_exts_user, [](const char *ext) {log_diagf("available: %s", ext);});
+	array_t<const char *> extensions = openxr_list_extensions(xr_exts_user, xr_minimum_exts, [](const char *ext) {log_diagf("available: %s", ext);});
 	extensions.each([](const char *&ext) { 
 		log_diagf("REQUESTED: <~grn>%s<~clr>", ext);
 		xr_exts_loaded.add(hash_fnv64_string(ext));
@@ -361,7 +362,7 @@ bool openxr_init() {
 		"xrGetInstanceProperties failed [%s]");
 
 	// The Leap hand tracking layer seems to supercede the built-in extensions.
-	if (has_leap_layer == false) {
+	if (xr_ext_available.EXT_hand_tracking && has_leap_layer == false) {
 		if (strcmp(inst_properties.runtimeName, "Windows Mixed Reality Runtime") == 0 ||
 			strcmp(inst_properties.runtimeName, "SteamVR/OpenXR") == 0) {
 			log_diag("Rejecting OpenXR's provided hand tracking extension due to the suspicion that it is inadequate for StereoKit.");
@@ -395,7 +396,7 @@ bool openxr_init() {
 
 	// Before we call xrCreateSession, lets fire an event for anyone that needs
 	// to set things up!
-	for (size_t i = 0; i < xr_callbacks_pre_session_create.count; i++) {
+	for (int32_t i = 0; i < xr_callbacks_pre_session_create.count; i++) {
 		xr_callbacks_pre_session_create[i].callback(xr_callbacks_pre_session_create[i].context);
 	}
 	xr_callbacks_pre_session_create.free();
@@ -608,6 +609,12 @@ void openxr_shutdown() {
 		if (xr_session    != XR_NULL_HANDLE) { xrDestroySession (xr_session   ); xr_session    = {}; }
 		if (xr_instance   != XR_NULL_HANDLE) { xrDestroyInstance(xr_instance  ); xr_instance   = {}; }
 	}
+
+	xr_minimum_exts = false;
+
+	xr_exts_loaded.free();
+	xr_exts_user  .free();
+	xr_callbacks_pre_session_create.free();
 }
 
 ///////////////////////////////////////////
@@ -956,7 +963,7 @@ void *backend_openxr_get_function(const char *function_name) {
 		log_err("backend_openxr_get_function must be called after StereoKit initialization!");
 
 	void   (*fn)()  = nullptr;
-	XrResult result = xrGetInstanceProcAddr(xr_instance, function_name, &fn);
+	XrResult result = xrGetInstanceProcAddr(xr_instance, function_name, (PFN_xrVoidFunction*)&fn);
 	if (XR_FAILED(result)) {
 		log_errf("Failed to find OpenXR function '%s' [%s]", function_name, openxr_string(result));
 		return nullptr;
@@ -985,6 +992,17 @@ void backend_openxr_ext_request(const char *extension_name) {
 	}
 
 	xr_exts_user.add(string_copy(extension_name));
+}
+
+///////////////////////////////////////////
+
+void backend_openxr_use_minimum_exts(bool32_t use_minimum_exts) {
+	if (sk_initialized) {
+		log_err("backend_openxr_ext_request must be called BEFORE StereoKit initialization!");
+		return;
+	}
+
+	xr_minimum_exts = use_minimum_exts;
 }
 
 ///////////////////////////////////////////
