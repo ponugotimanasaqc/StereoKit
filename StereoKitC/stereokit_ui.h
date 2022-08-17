@@ -74,6 +74,8 @@ typedef struct ui_settings_t {
 	float backplate_border;
 } ui_settings_t;
 
+typedef uint64_t ui_hash_t;
+
 ///////////////////////////////////////////
 
 SK_DeclarePrivateType(ui_theme_t);
@@ -89,35 +91,35 @@ SK_API void       ui_pop_theme        ();
 
 ///////////////////////////////////////////
 
-SK_API void     ui_quadrant_size_verts (vert_t *ref_vertices, int32_t vertex_count, float overflow_percent);
-SK_API void     ui_quadrant_size_mesh  (mesh_t ref_mesh, float overflow_percent);
-SK_API void     ui_show_volumes        (bool32_t      show);
-SK_API void     ui_enable_far_interact (bool32_t      enable);
-SK_API bool32_t ui_far_interact_enabled();
-SK_API void     ui_settings            (ui_settings_t settings);
-SK_API float    ui_get_padding         ();
-SK_API float    ui_get_gutter          ();
-SK_API void     ui_set_color           (color128      color);
-SK_API void     ui_set_theme_color     (ui_color_ color_type, color128 color_gamma);
-SK_API color128 ui_get_theme_color     (ui_color_ color_type);
-SK_API void     ui_set_element_visual  (ui_vis_ element_visual, mesh_t mesh, material_t material sk_default(nullptr), vec2 min_size sk_default(vec2_zero));
+SK_API void      ui_quadrant_size_verts (vert_t *ref_vertices, int32_t vertex_count, float overflow_percent);
+SK_API void      ui_quadrant_size_mesh  (mesh_t ref_mesh, float overflow_percent);
+SK_API void      ui_show_volumes        (bool32_t      show);
+SK_API void      ui_enable_far_interact (bool32_t      enable);
+SK_API bool32_t  ui_far_interact_enabled();
+SK_API void      ui_settings            (ui_settings_t settings);
+SK_API float     ui_get_padding         ();
+SK_API float     ui_get_gutter          ();
+SK_API void      ui_set_color           (color128      color);
+SK_API void      ui_set_theme_color     (ui_color_ color_type, color128 color_gamma);
+SK_API color128  ui_get_theme_color     (ui_color_ color_type);
+SK_API void      ui_set_element_visual  (ui_vis_ element_visual, mesh_t mesh, material_t material sk_default(nullptr), vec2 min_size sk_default(vec2_zero));
 
-SK_API void     ui_push_text_style       (text_style_t  style);
-SK_API void     ui_pop_text_style        ();
-SK_API void     ui_push_tint             (color128 tint_gamma);
-SK_API void     ui_pop_tint              ();
-SK_API void     ui_push_enabled          (bool32_t enabled);
-SK_API void     ui_pop_enabled           ();
-SK_API void     ui_push_preserve_keyboard(bool32_t preserve_keyboard);
-SK_API void     ui_pop_preserve_keyboard ();
-SK_API void     ui_push_surface          (pose_t surface_pose, vec3 layout_start sk_default(vec3_zero), vec2 layout_dimensions sk_default(vec2_zero));
-SK_API void     ui_pop_surface           ();
-SK_API uint64_t ui_push_id               (const char     *id);
-SK_API uint64_t ui_push_id_16            (const char16_t *id);
-SK_API uint64_t ui_push_idi              (int32_t id);
-SK_API void     ui_pop_id                ();
-SK_API uint64_t ui_stack_hash            (const char     *string);
-SK_API uint64_t ui_stack_hash_16         (const char16_t *string);
+SK_API void      ui_push_text_style       (text_style_t  style);
+SK_API void      ui_pop_text_style        ();
+SK_API void      ui_push_tint             (color128 tint_gamma);
+SK_API void      ui_pop_tint              ();
+SK_API void      ui_push_enabled          (bool32_t enabled);
+SK_API void      ui_pop_enabled           ();
+SK_API void      ui_push_preserve_keyboard(bool32_t preserve_keyboard);
+SK_API void      ui_pop_preserve_keyboard ();
+SK_API void      ui_push_surface          (pose_t surface_pose, vec3 layout_start sk_default(vec3_zero), vec2 layout_dimensions sk_default(vec2_zero));
+SK_API void      ui_pop_surface           ();
+SK_API ui_hash_t ui_push_id               (const char     *id);
+SK_API ui_hash_t ui_push_id_16            (const char16_t *id);
+SK_API ui_hash_t ui_push_idi              (int32_t id);
+SK_API void      ui_pop_id                ();
+SK_API ui_hash_t ui_stack_hash            (const char     *string);
+SK_API ui_hash_t ui_stack_hash_16         (const char16_t *string);
 
 SK_API void     ui_layout_area     (vec3 start, vec2 dimensions);
 SK_API vec2     ui_layout_remaining();
@@ -136,7 +138,7 @@ SK_API float    ui_line_height   ();
 SK_API void     ui_space         (float space);
 
 SK_API bool32_t ui_is_interacting (handed_ hand);
-SK_API void     ui_button_behavior(vec3 window_relative_pos, vec2 size, uint64_t id, sk_ref(float) finger_offset, sk_ref(button_state_) button_state, sk_ref(button_state_) focus_state);
+SK_API void     ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, sk_ref(float) finger_offset, sk_ref(button_state_) button_state, sk_ref(button_state_) focus_state);
 
 SK_API void          ui_model_at          (model_t model, vec3 start, vec3 size, color128 color);
 SK_API button_state_ ui_volumei_at        (const char     *id, bounds_t bounds, ui_confirm_ interact_type, handed_ *out_opt_hand sk_default(nullptr), button_state_ *out_opt_focus_state sk_default(nullptr));
