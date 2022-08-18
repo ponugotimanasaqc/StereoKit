@@ -29,8 +29,8 @@ bool32_t ui_interact_box(const ui_interactor_t *actor, bounds_t box, float *out_
 	*out_priority = 0;
 	if (actor->tracked & button_state_active) {
 		switch (actor->type) {
-		case ui_interactor_type_point: return ui_in_box       (actor->pos_local.at, actor->pos_local.at_prev, actor->radius, box); break;
-		case ui_interactor_type_ray:   return ui_intersect_box(actor->pos_local.ray, box, out_priority);                           break;
+		case ui_interactor_type_point: return ui_in_box       (actor->hit_test_local.at, actor->hit_test_local.at_prev, actor->radius, box); break;
+		case ui_interactor_type_ray:   return ui_intersect_box(actor->hit_test_local.ray, box, out_priority);                           break;
 		}
 	}
 	return false;
@@ -122,7 +122,7 @@ void ui_interaction_2h(ui_hash_t id, ui_interactor_event_ event_mask, bounds_t b
 		// around a bit.
 		/*if (actor->focused_prev == id) {
 			if (actor->state & button_state_just_active) {
-				actor->action_pose_world = actor->pose_world;
+				actor->motion_pose_world_action = actor->motion_pose_world;
 			}
 			if (actor->active_prev == id || actor->active == id) {
 				result = true;
@@ -275,8 +275,14 @@ button_state_ ui_interactor_set_active(ui_interactor_id_t interactor, ui_hash_t 
 
 	button_state_ result = button_state_inactive;
 	if ( is_active               ) result  = button_state_active;
-	if ( is_active && !was_active) result |= button_state_just_active; 
+	if ( is_active && !was_active) result |= button_state_just_active;
 	if (!is_active &&  was_active) result |= button_state_just_inactive;
+
+	if (result & button_state_just_active) {
+		actor->motion_pose_world_action = actor->motion_pose_world;
+		actor->hit_test_world_action  = actor->hit_test_world;
+	}
+	
 	return result;
 }
 

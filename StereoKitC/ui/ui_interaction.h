@@ -52,15 +52,15 @@ struct ui_interactor_t {
 	
 	// Information about the location and shape of the interactor
 	float                radius;
-	
-	pose_t               pose_world;
-	pose_t               pose_local;
-	pose_t               action_pose_world;
-	ui_interactor_pos_t  pos_world;
-	ui_interactor_pos_t  pos_local;
-	ui_interactor_pos_t  action_pos_world;
 	float                rot_smoothing;
 	float                pos_smoothing;
+	
+	pose_t               motion_pose_world;
+	pose_t               motion_pose_local;
+	pose_t               motion_pose_world_action;
+	ui_interactor_pos_t  hit_test_world;
+	ui_interactor_pos_t  hit_test_local;
+	ui_interactor_pos_t  hit_test_world_action;
 };
 
 typedef int32_t ui_interactor_id_t;
