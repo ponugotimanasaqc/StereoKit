@@ -135,6 +135,15 @@ bool32_t bounds_capsule_contains(bounds_t bounds, vec3 pt1, vec3 pt2, float radi
 
 ///////////////////////////////////////////
 
+float bounds_sdf_manhattan(bounds_t bounds, vec3 sample_point) {
+	vec3 rel = sample_point - bounds.center;
+	vec3 quadrant_pt = vec3{ fabsf(rel.x), fabsf(rel.y), fabsf(rel.z) };
+	vec3 dist = quadrant_pt - bounds.dimensions/2;
+	return fmaxf(fmaxf(dist.x, dist.y), dist.z);
+}
+
+///////////////////////////////////////////
+
 bounds_t bounds_grow_to_fit_pt(bounds_t bounds, vec3 pt) {
 	vec3 half = bounds.dimensions / 2;
 	vec3 min  = bounds.center     - half;

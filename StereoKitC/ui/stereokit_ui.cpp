@@ -646,7 +646,7 @@ bool ui_init() {
 	ui_interactor_t hand = {};
 	
 	// Hand poke
-	hand.type   = ui_interactor_type_point;
+	/*hand.type = ui_interactor_type_point;
 	hand.events = ui_interactor_event_poke;
 	hand.pos_smoothing = .6f;
 	hand.rot_smoothing = .4f;
@@ -660,14 +660,22 @@ bool ui_init() {
 	skui_interactors.add(hand);
 	skui_interactors.add(hand);
 
-	// Mouse ray
+	// Hand ray
 	hand.type   = ui_interactor_type_ray;
 	hand.events = (ui_interactor_event_)(ui_interactor_event_poke | ui_interactor_event_pinch);
-	hand.pos_smoothing = 1;
-	hand.rot_smoothing = 1;
+	hand.pos_smoothing = .6f;
+	hand.rot_smoothing = .4f;
 	hand.radius        = 0;
 	skui_interactors.add(hand);
-	skui_interactors.add(hand);
+	skui_interactors.add(hand);*/
+
+	ui_interactor_t mouse = {};
+	mouse.type   = ui_interactor_type_ray;
+	mouse.events = (ui_interactor_event_)(ui_interactor_event_poke | ui_interactor_event_pinch);
+	mouse.pos_smoothing = 1;
+	mouse.rot_smoothing = 1;
+	mouse.radius        = 0;
+	skui_interactors.add(mouse);
 
 	return true;
 }
@@ -677,7 +685,7 @@ bool ui_init() {
 void ui_update() {
 	const matrix *to_local = hierarchy_to_local();
 
-	for (int32_t i = 0; i < handed_max; i++) {
+	/*for (int32_t i = 0; i < handed_max; i++) {
 	// Hand poke
 		const hand_t    *hand    = input_hand((handed_)i);
 		const pointer_t *pointer = input_get_pointer(input_hand_pointer_id[i]);
@@ -735,9 +743,9 @@ void ui_update() {
 			actor->hit_test_world.at_prev = actor->hit_test_world.at;
 			actor->hit_test_local.at_prev = actor->hit_test_world.at;
 		}
-	}*/
+	}
 	
-	// Mouse ray
+	// Hand ray
 	for (size_t i = 0; i < handed_max; i++) {
 		const hand_t    *hand    = input_hand((handed_)i);
 		const pointer_t *pointer = input_get_pointer(input_hand_pointer_id[i]);
@@ -758,26 +766,49 @@ void ui_update() {
 		actor->focused            = 0;
 		actor->active             = 0;
 
-		/*bool was_ray_enabled = true;// skui_hand[i].ray_enabled && !skui_hand[i].ray_discard;
+		//bool was_ray_enabled = true;// skui_hand[i].ray_enabled && !skui_hand[i].ray_discard;
 
-		// draw hand rays
-		skui_hand[i].ray_visibility = math_lerp(skui_hand[i].ray_visibility,
-			was_ray_enabled && skui_enable_far_interact && skui_hand[i].ray_enabled && !skui_hand[i].ray_discard ? 1.0f : 0.0f,
-			20.0f * time_elapsedf_unscaled());
-		if (skui_hand[i].focused_prev != 0) skui_hand[i].ray_visibility = 0;
-		if (skui_hand[i].ray_visibility > 0.004f) {
-			ray_t       r     = input_get_pointer(input_hand_pointer_id[i])->ray;
-			const float scale = 2;
-			line_point_t points[5] = {
-				line_point_t{r.pos+r.dir*(0.07f              ), 0.001f,  color32{255,255,255,0}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 60 )}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 80)}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 25 )}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
-			line_add_listv(points, 5);
-		}
-		skui_hand[i].ray_discard = false;*/
+		//// draw hand rays
+		//skui_hand[i].ray_visibility = math_lerp(skui_hand[i].ray_visibility,
+		//	was_ray_enabled && skui_enable_far_interact && skui_hand[i].ray_enabled && !skui_hand[i].ray_discard ? 1.0f : 0.0f,
+		//	20.0f * time_elapsedf_unscaled());
+		//if (skui_hand[i].focused_prev != 0) skui_hand[i].ray_visibility = 0;
+		//if (skui_hand[i].ray_visibility > 0.004f) {
+		//	ray_t       r     = input_get_pointer(input_hand_pointer_id[i])->ray;
+		//	const float scale = 2;
+		//	line_point_t points[5] = {
+		//		line_point_t{r.pos+r.dir*(0.07f              ), 0.001f,  color32{255,255,255,0}},
+		//		line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 60 )}},
+		//		line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 80)}},
+		//		line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 25 )}},
+		//		line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
+		//	line_add_listv(points, 5);
+		//}
+		//skui_hand[i].ray_discard = false;
+	}*/
+
+	// Mouse ray
+	ui_interactor_t* actor = &skui_interactors.last();
+	ray_t    mouse_ray = {};
+	bool32_t mouse_tracked = ray_from_mouse(input_mouse()->pos, mouse_ray);
+	if (mouse_tracked) {
+		actor->hit_test_world.ray = mouse_ray;
+		actor->hit_test_local.ray = mouse_ray;
+	} else {
 	}
+	pose_t mouse_pose = { mouse_ray.pos, quat_lookat(mouse_ray.pos, mouse_ray.pos + mouse_ray.dir) };
+	actor->motion_pose_world = mouse_pose;
+	actor->motion_pose_local = mouse_pose;
+
+	actor->tracked    = button_make_state(actor->tracked & button_state_active, mouse_tracked);
+	actor->state      = input_key(key_mouse_left);
+	actor->activation = actor->state & button_state_active ? 1 : 0;
+
+	actor->focused_prev     = actor->focused;
+	actor->active_prev      = actor->active;
+	actor->focused_priority = FLT_MAX;
+	actor->focused          = 0;
+	actor->active           = 0;
 
 	ui_push_surface(pose_identity);
 
@@ -789,7 +820,7 @@ void ui_update() {
 }
 
 ///////////////////////////////////////////
-
+#include <stdio.h>
 void ui_update_late() {
 	ui_pop_surface();
 	if (skui_layers                 .count != 0) log_err("ui: Mismatching number of Begin/End calls!");
@@ -797,6 +828,23 @@ void ui_update_late() {
 	if (skui_tint_stack             .count != 1) log_err("ui: Mismatching number of tint push/pop calls!");
 	if (skui_enabled_stack          .count != 1) log_err("ui: Mismatching number of enabled push/pop calls!");
 	if (skui_preserve_keyboard_stack.count != 1) log_err("ui: Mismatching number of preserve keyboard push/pop calls!");
+
+	hierarchy_push(pose_matrix(*input_head())); 
+	hierarchy_push(matrix_trs(vec3{ -0.25f, .2f, -0.25f }, quat_from_angles(0,180,0)));
+	char text[256];
+	for (int32_t i = 0; i < skui_interactors.count; i++)
+	{
+		float f = (float)((double)skui_interactors[i].focused_prev / (double)UINT64_MAX);
+		float a = (float)((double)skui_interactors[i].active_prev / (double)UINT64_MAX);
+		snprintf(text, sizeof(text), "%d: f-%.3f a-%.3f, %.2f", i, f, a, skui_interactors[i].focused_priority == FLT_MAX ? 0 : skui_interactors[i].focused_priority);
+		text_add_at(text, matrix_t(vec3{0, i*-0.025f,0}));
+	}
+	hierarchy_pop();
+	hierarchy_pop();
+	for (int32_t i = 0; i < skui_interactors.count; i++)
+	{
+		line_add_axis({ skui_interactors[i].hit_at_world, quat_identity }, skui_interactors[i].active_prev != 0 ? 0.01f : 0.005f);
+	}
 }
 
 ///////////////////////////////////////////
@@ -1141,6 +1189,7 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 	button_state = button_state_inactive;
 	focus_state  = button_state_inactive;
 	int32_t interactor = -1;
+	vec3    interaction_at;
 
 	// Button interaction focus is detected out in front of the button to 
 	// prevent 'reverse' or 'side' presses where the finger comes from the
@@ -1162,17 +1211,17 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 	ui_interaction_1h(id, ui_interactor_event_poke,
 		activation_start, activation_size,
 		box_start,        box_size,
-		&focus_state, &interactor);
+		0, &focus_state, &interactor, &interaction_at);
 
 	// If a hand is interacting, adjust the button surface accordingly
 	finger_offset = skui_settings.depth;
 	if (focus_state & button_state_active) {
 		finger_offset = -(skui_interactors[interactor].hit_test_local.at.z+skui_interactors[interactor].radius) - window_relative_pos.z;
-		bool pressed  = finger_offset < skui_settings.depth / 2 || skui_interactors[interactor].state & button_state_just_active;
-		button_state  = ui_interactor_set_active(interactor, id, pressed);
+		bool pressed  = finger_offset < skui_settings.depth / 2 || skui_interactors[interactor].state & button_state_active;
+		button_state  = ui_interactor_set_active(interactor, id, pressed, interaction_at);
 		finger_offset = fminf(fmaxf(2*mm2m, finger_offset), skui_settings.depth);
 	} else if (focus_state & button_state_just_inactive) {
-		button_state = ui_interactor_set_active(interactor, id, false);
+		button_state = ui_interactor_set_active(interactor, id, false, interaction_at);
 	}
 	
 	if      (button_state & button_state_just_active)   sound_play(skui_snd_interact, skui_interactors[interactor].hit_test_world.at, 1);
@@ -1227,6 +1276,7 @@ button_state_ ui_volumei_at_g(const C *id, bounds_t bounds, ui_confirm_ interact
 	button_state_ result  = button_state_inactive;
 	button_state_ focus   = button_state_inactive;
 	int32_t       interactor = -1;
+	vec3          interact_at;
 
 	vec3 start = bounds.center + bounds.dimensions / 2;
 	
@@ -1234,7 +1284,7 @@ button_state_ ui_volumei_at_g(const C *id, bounds_t bounds, ui_confirm_ interact
 		interact_type  == ui_confirm_push ? ui_interactor_event_poke : ui_interactor_event_pinch,
 		start, bounds.dimensions,
 		start, bounds.dimensions,
-		&focus, &interactor);
+		10, &focus, &interactor, &interact_at);
 
 	bool active = focus & button_state_active && !(focus & button_state_just_inactive);
 	if (interact_type != ui_confirm_push && interactor != -1) {
@@ -1243,7 +1293,7 @@ button_state_ ui_volumei_at_g(const C *id, bounds_t bounds, ui_confirm_ interact
 		// it to focused if it's still active.
 		focus = ui_interactor_set_focus(interactor, id_hash, active || focus & button_state_active, 0);
 	}
-	result = ui_interactor_set_active(interactor, id_hash, active);
+	result = ui_interactor_set_active(interactor, id_hash, active, interact_at);
 
 	if (out_opt_hand        != nullptr) *out_opt_hand        = (handed_)interactor;
 	if (out_opt_focus_state != nullptr) *out_opt_focus_state = focus;
@@ -1275,7 +1325,9 @@ bool32_t ui_volume_at_g(const C *id, bounds_t bounds) {
 			size.dimensions = bounds.dimensions + vec3_one*skui_settings.padding;
 		}
 
-		bool          in_box = ui_interact_box(actor, size, nullptr);
+		float         interact_dist;
+		vec3          interact_at;
+		bool          in_box = ui_interact_box(actor, size, &interact_at, &interact_dist);
 		button_state_ state  = ui_interactor_set_focus(i, id_hash, in_box, 0);
 		if (state & button_state_just_active)
 			result = true;
@@ -1299,7 +1351,8 @@ button_state_ ui_interact_volume_at(bounds_t bounds, handed_ &out_hand) {
 			continue;
 
 		float priority = 0;
-		if (ui_interact_box(&skui_interactors[i], bounds, &priority)) {
+		vec3 at;
+		if (ui_interact_box(&skui_interactors[i], bounds, &at, &priority)) {
 			button_state_ state = skui_interactors[i].state;
 			if (state != button_state_inactive) {
 				result = state;
@@ -1706,8 +1759,9 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 	// Find out if the user is trying to focus this UI element
 	button_state_ focus;
 	int32_t       interactor;
-	ui_interaction_1h(id_hash, ui_interactor_event_poke, final_pos, box_size, final_pos, box_size, &focus, &interactor);
-	button_state_ state = ui_interactor_set_active(interactor, id_hash, focus & button_state_active);
+	vec3          interaction_at;
+	ui_interaction_1h(id_hash, ui_interactor_event_poke, final_pos, box_size, final_pos, box_size, 0, &focus, &interactor, &interaction_at);
+	button_state_ state = ui_interactor_set_active(interactor, id_hash, focus & button_state_active, interaction_at);
 
 	if (state & button_state_just_active) {
 		platform_keyboard_show(true,type);
@@ -1874,6 +1928,7 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 	float         finger_offset = button_depth;
 	float         finger_x      = 0;
 	int32_t       actor         = -1;
+	vec3          interaction_at;
 	if (confirm_method == ui_confirm_push) {
 		vec3  activation_start = window_relative_pos + vec3{ percent * -(size.x-button_size.x) + button_size.x/2.0f, -(size.y/2 - button_size.y/2) + button_size.y/2.0f, -activation_plane };
 		vec3  activation_size  = vec3{ button_size.x*2, button_size.y*2, 0.0001f };
@@ -1884,20 +1939,20 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 			ui_interactor_event_poke,
 			activation_start, activation_size,
 			sustain_start,    sustain_size,
-			&focus_state, &actor);
+			0, &focus_state, &actor, &interaction_at);
 
 		// Push confirm is like having a regular button on the slider, and it
 		// only slides when that button is pressed.
 		if (focus_state & button_state_active) {
-			finger_offset = -skui_interactors[actor].hit_test_local.at.z - window_relative_pos.z;
+			finger_offset = -interaction_at.z - window_relative_pos.z;
 			bool pressed  = finger_offset < button_depth / 2;
-			button_state  = ui_interactor_set_active(actor, id, pressed);
+			button_state  = ui_interactor_set_active(actor, id, pressed, interaction_at);
 			finger_offset = fminf(fmaxf(2*mm2m, finger_offset), button_depth);
 		} else if (focus_state & button_state_just_inactive) {
-			button_state = ui_interactor_set_active(actor, id, false);
+			button_state = ui_interactor_set_active(actor, id, false, interaction_at);
 		}
 		if (actor != -1)
-			finger_x = skui_interactors[actor].hit_test_local.at.x;
+			finger_x = interaction_at.x;
 	} else if (confirm_method == ui_confirm_pinch || confirm_method == ui_confirm_variable_pinch) {
 		vec3 activation_start = window_relative_pos + vec3{ percent * -(size.x-button_size.x) + button_size.x, -(size.y/2 - button_size.y/2), button_depth };
 		vec3 activation_size  = vec3{ button_size.x*3, button_size.y, button_depth*2 };
@@ -1906,18 +1961,18 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 			ui_interactor_event_pinch,
 			activation_start, activation_size,
 			activation_start, activation_size,
-			&focus_state, &actor);
+			0, &focus_state, &actor, &interaction_at);
 
 		// Pinch confirm uses a handle that the user must pinch, in order to
 		// drag it around the slider.
 		if (actor != -1) {
 			const ui_interactor_t *h = &skui_interactors[actor];
 			button_state_ pinch = h->state;
-			button_state = ui_interactor_set_active(actor, id, pinch & button_state_active);
+			button_state = ui_interactor_set_active(actor, id, pinch & button_state_active, interaction_at);
 			// Focus can get lost if the user is dragging outside the box, so set
 			// it to focused if it's still active.
 			focus_state = ui_interactor_set_focus(actor, id, button_state & button_state_active || focus_state & button_state_active, 0);
-			vec3    pinch_local = h->hit_test_local.at;
+			vec3    pinch_local = interaction_at;
 			int32_t scale_step  = (int32_t)((-pinch_local.z-activation_plane) / snap_dist);
 			finger_x = pinch_local.x;
 
@@ -1967,7 +2022,7 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 
 		vec3 pinch_local = actor < 0
 			? vec3_zero
-			: skui_interactors[actor].hit_test_local.at;
+			: interaction_at;
 		int32_t scale_step  = (int32_t)((-pinch_local.z-activation_plane) / snap_dist);
 		if (confirm_method == ui_confirm_variable_pinch && button_state & button_state_active && scale_step > 0) {
 			float scale    = 1 + scale_step * snap_scale;
@@ -2048,8 +2103,8 @@ bool32_t _ui_handle_begin(ui_hash_t id, pose_t &movement, bounds_t handle, bool3
 		skui_preserve_keyboard_ids_write->add(id);
 	}
 
-	vec3     box_start = handle.center + handle.dimensions * 0.5f + vec3{ skui_settings.padding, skui_settings.padding, skui_settings.padding };
-	vec3     box_size  = handle.dimensions + vec3{ skui_settings.padding, skui_settings.padding, skui_settings.padding } *2;
+	vec3     box_start = handle.center + handle.dimensions * 0.5f;
+	vec3     box_size  = handle.dimensions;
 	bounds_t box       = bounds_t{box_start, box_size};
 
 	static vec3 start_2h_pos = {};
@@ -2061,13 +2116,22 @@ bool32_t _ui_handle_begin(ui_hash_t id, pose_t &movement, bounds_t handle, bool3
 	static vec3 start_palm_pos  [2] = {};
 	static quat start_palm_rot  [2] = { quat_identity,quat_identity };
 
-	int32_t interactor;
+	static pose_t edit_local_pose     = pose_identity;
+	static vec3   handle_local_offset = vec3_zero;
+
+	int32_t       interactor;
+	vec3          interact_at;
 	button_state_ focus = button_state_inactive, active = button_state_inactive;
-	ui_interaction_1h(id, ui_interactor_event_pinch, box_start, box_size, box_start, box_size, &focus, &interactor);
+	ui_interaction_1h(id, ui_interactor_event_pinch, box_start, box_size, box_start, box_size, 10, &focus, &interactor, &interact_at);
 
 	if (interactor != -1) {
 		ui_interactor_t* h = &skui_interactors[interactor];
-		active = ui_interactor_set_active(interactor, id, h->state & button_state_active);
+		bool was_focused = h->focused_prev == id;
+
+		// Maintain activation if it was previously active, or activate it if
+		// this is the first frame the interactor has become active.
+		bool maintain_active = h->active_prev == id && h->state & button_state_active;
+		active = ui_interactor_set_active(interactor, id, maintain_active || (was_focused && (focus & button_state_active) && (h->state & button_state_just_active)), interact_at);
 		// Focus can get lost if the user is dragging outside the box, so set
 		// it to focused if it's still active.
 		focus = ui_interactor_set_focus(interactor, id, active & button_state_active || focus & button_state_active, 10);
@@ -2075,34 +2139,30 @@ bool32_t _ui_handle_begin(ui_hash_t id, pose_t &movement, bounds_t handle, bool3
 		if (active & button_state_just_active) {
 			start_handle_pos[0] = movement.position;
 			start_handle_rot[0] = movement.orientation;
+			start_palm_pos  [0] = matrix_transform_pt  (to_local, h->motion_pose_world_action.position);
+			start_palm_rot  [0] = matrix_transform_quat(to_local, h->motion_pose_world_action.orientation);
+
+			matrix to_edit_local = matrix_invert(pose_matrix(h->motion_pose_world_action));
+			edit_local_pose     = matrix_transform_pose(to_edit_local, movement);
+			handle_local_offset = hierarchy_to_local_point(h->motion_pose_world_action.position);
 		}
 
 		if (active & button_state_active) {
-			quat dest_rot;
+			matrix from_edit_local = pose_matrix(h->motion_pose_world);
+			pose_t dest_pose       = matrix_transform_pose(from_edit_local, edit_local_pose);
+
 			switch (move_type) {
-			case ui_move_exact: {
-				quat delta = quat_difference(h->motion_pose_world_action.orientation, h->motion_pose_world.orientation);
-				dest_rot = matrix_transform_quat(to_local, delta);
-				dest_rot = quat_difference(start_handle_rot[0], dest_rot);
-			} break;
-			case ui_move_face_user: {
-				vec3 look_from = movement.position; // vec3{ movement.position.x, h->motion_pose_world.position.y, movement.position.z };
-				dest_rot = quat_lookat_up(look_from, matrix_transform_pt(to_local, input_head()->position), matrix_transform_dir(to_local, vec3_up));
-				dest_rot = quat_difference(start_handle_rot[0], dest_rot);
-			} break;
-			case ui_move_pos_only: {
-				dest_rot = quat_identity;
-			} break;
-			case ui_move_none: {
-				dest_rot = quat_identity;
-			} break;
-			default: dest_rot = quat_identity; log_err("Unimplemented move type!"); break;
+			case ui_move_exact: break;
+			case ui_move_face_user:   dest_pose.orientation = quat_lookat(movement.position, input_head()->position); break;
+			case ui_move_face_screen: dest_pose.orientation = quat_from_angles(0, 180, 0)*input_head()->orientation; break;
+			case ui_move_pos_only:    dest_pose.orientation = movement.orientation; break;
+			case ui_move_none:        dest_pose = movement; break;
+			default:                  dest_pose = movement; log_err("Unimplemented move type!"); break;
 			}
 
-			vec3 dest_pos = matrix_transform_pt(to_local, h->motion_pose_world.position) + dest_rot * (start_handle_pos[0] - matrix_transform_pt(to_local, h->motion_pose_world_action.position));
+			movement.position    = vec3_lerp (movement.position,    dest_pose.position,    h->pos_smoothing);
+			movement.orientation = quat_slerp(movement.orientation, dest_pose.orientation, h->rot_smoothing);
 
-			movement.position    = vec3_lerp (movement.position,    dest_pos,                       h->pos_smoothing);
-			movement.orientation = quat_slerp(movement.orientation, start_handle_rot[0] * dest_rot, h->rot_smoothing);
 			ui_pop_surface();
 			ui_push_surface(movement);
 		}

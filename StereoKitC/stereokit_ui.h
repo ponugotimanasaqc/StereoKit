@@ -11,6 +11,7 @@ typedef enum ui_move_ {
 	ui_move_face_user,
 	ui_move_pos_only,
 	ui_move_none,
+	ui_move_face_screen,
 } ui_move_;
 
 typedef enum ui_win_ {
