@@ -1945,7 +1945,7 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 		// only slides when that button is pressed.
 		if (focus_state & button_state_active) {
 			finger_offset = -interaction_at.z - window_relative_pos.z;
-			bool pressed  = finger_offset < button_depth / 2;
+			bool pressed  = finger_offset < button_depth / 2 || (skui_interactors[actor].state & button_state_just_active) || (skui_interactors[actor].active_prev == id && skui_interactors[actor].state & button_state_active);
 			button_state  = ui_interactor_set_active(actor, id, pressed, interaction_at);
 			finger_offset = fminf(fmaxf(2*mm2m, finger_offset), button_depth);
 		} else if (focus_state & button_state_just_inactive) {
