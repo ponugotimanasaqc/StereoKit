@@ -363,10 +363,8 @@ void ui_quadrant_mesh_half(mesh_t *mesh, float padding, int32_t quadrant_slices,
 ///////////////////////////////////////////
 
 void ui_anim_start(ui_hash_t id) {
-	if (skui_anim_id != id) {
-		skui_anim_id = id;
-		skui_anim_time = time_getf_unscaled();
-	}
+	skui_anim_id = id;
+	skui_anim_time = time_getf_unscaled();
 }
 
 ///////////////////////////////////////////

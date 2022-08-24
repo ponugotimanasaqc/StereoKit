@@ -40,8 +40,14 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 	// If a hand is interacting, adjust the button surface accordingly
 	finger_offset = skui_settings.depth;
 	if (focus_state & button_state_active) {
-		finger_offset = -(skui_interactors[interactor].hit_test_local.at.z+skui_interactors[interactor].radius) - window_relative_pos.z;
-		bool pressed  = finger_offset < skui_settings.depth / 2 || skui_interactors[interactor].state & button_state_active;
+		ui_interactor_t* actor = &skui_interactors[interactor];
+
+		finger_offset = -(interaction_at.z+actor->radius) - window_relative_pos.z;
+		bool pressed  = finger_offset < skui_settings.depth / 2;
+		if ((actor->active_prev == id && (actor->state & button_state_active)) || (actor->state & button_state_just_active)) {
+			pressed = true;
+			finger_offset = 0;
+		}
 		button_state  = ui_interactor_set_active(interactor, id, pressed, interaction_at);
 		finger_offset = fminf(fmaxf(2*mm2m, finger_offset), skui_settings.depth);
 	} else if (focus_state & button_state_just_inactive) {
