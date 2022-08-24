@@ -28,28 +28,30 @@ bool32_t ui_intersect_box(ray_t ray, bounds_t box, float *out_distance) {
 bool32_t ui_interact_box(const ui_interactor_t *actor, bounds_t box, vec3 *out_at, float *out_priority) {
 	*out_priority = FLT_MAX;
 	*out_at       = vec3_zero;
-	if (actor->tracked & button_state_active) {
-		switch (actor->type) {
-		case ui_interactor_type_point: {
-			bool32_t result = ui_in_box(actor->hit_test_local.at, actor->hit_test_local.at_prev, actor->radius, box);
-			if (result) {
-				*out_at       = actor->hit_test_local.at;
-				*out_priority = bounds_sdf_manhattan(box, *out_at);
-			}
-			return result;
-		} break;
-		case ui_interactor_type_ray: {
-			float    dist   = 0;
-			bool32_t result = ui_intersect_box(actor->hit_test_local.ray, box, &dist);
-			if (result) {
-				*out_at       = actor->hit_test_local.ray.pos + dist * actor->hit_test_local.ray.dir;
-				*out_priority = bounds_sdf_manhattan(box, *out_at) + vec3_distance_sq(actor->hit_test_local.ray.pos, *out_at);
-			}
-			return result;
-		} break;
+
+	if (!(actor->tracked & button_state_active))
+		return false;
+
+	switch (actor->type) {
+	case ui_interactor_type_point: {
+		bool32_t result = ui_in_box(actor->hit_test_local.at, actor->hit_test_local.at_prev, actor->radius, box);
+		if (result) {
+			*out_at       = actor->hit_test_local.at;
+			*out_priority = bounds_sdf_manhattan(box, *out_at);
 		}
+		return result;
+	} break;
+	case ui_interactor_type_ray: {
+		float    dist   = 0;
+		bool32_t result = ui_intersect_box(actor->hit_test_local.ray, box, &dist);
+		if (result) {
+			*out_at       = actor->hit_test_local.ray.pos + dist * actor->hit_test_local.ray.dir;
+			*out_priority = bounds_sdf_manhattan(box, *out_at) + vec3_distance_sq(actor->hit_test_local.ray.pos, *out_at);
+		}
+		return result;
+	} break;
+	default: return false;
 	}
-	return false;
 }
 
 ///////////////////////////////////////////
