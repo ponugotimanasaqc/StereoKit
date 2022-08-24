@@ -830,14 +830,14 @@ void ui_update_late() {
 	if (skui_preserve_keyboard_stack.count != 1) log_err("ui: Mismatching number of preserve keyboard push/pop calls!");
 
 	hierarchy_push(pose_matrix(*input_head())); 
-	hierarchy_push(matrix_trs(vec3{ -0.25f, .2f, -0.25f }, quat_from_angles(0,180,0)));
+	hierarchy_push(matrix_trs(vec3{ -0.35f, .2f, -0.25f }, quat_from_angles(0,180,0)));
 	char text[256];
 	for (int32_t i = 0; i < skui_interactors.count; i++)
 	{
 		float f = (float)((double)skui_interactors[i].focused_prev / (double)UINT64_MAX);
 		float a = (float)((double)skui_interactors[i].active_prev / (double)UINT64_MAX);
 		snprintf(text, sizeof(text), "%d: f-%.3f a-%.3f, %.2f", i, f, a, skui_interactors[i].focused_priority == FLT_MAX ? 0 : skui_interactors[i].focused_priority);
-		text_add_at(text, matrix_t(vec3{0, i*-0.025f,0}));
+		text_add_at(text, matrix_t(vec3{0, i*-0.025f,0}), 0, text_align_center_left);
 	}
 	hierarchy_pop();
 	hierarchy_pop();
@@ -1211,7 +1211,7 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 	ui_interaction_1h(id, ui_interactor_event_poke,
 		activation_start, activation_size,
 		box_start,        box_size,
-		0, &focus_state, &interactor, &interaction_at);
+		&focus_state, &interactor, &interaction_at);
 
 	// If a hand is interacting, adjust the button surface accordingly
 	finger_offset = skui_settings.depth;
@@ -1284,7 +1284,7 @@ button_state_ ui_volumei_at_g(const C *id, bounds_t bounds, ui_confirm_ interact
 		interact_type  == ui_confirm_push ? ui_interactor_event_poke : ui_interactor_event_pinch,
 		start, bounds.dimensions,
 		start, bounds.dimensions,
-		10, &focus, &interactor, &interact_at);
+		&focus, &interactor, &interact_at);
 
 	bool active = focus & button_state_active && !(focus & button_state_just_inactive);
 	if (interact_type != ui_confirm_push && interactor != -1) {
@@ -1760,7 +1760,7 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 	button_state_ focus;
 	int32_t       interactor;
 	vec3          interaction_at;
-	ui_interaction_1h(id_hash, ui_interactor_event_poke, final_pos, box_size, final_pos, box_size, 0, &focus, &interactor, &interaction_at);
+	ui_interaction_1h(id_hash, ui_interactor_event_poke, final_pos, box_size, final_pos, box_size, &focus, &interactor, &interaction_at);
 	button_state_ state = ui_interactor_set_active(interactor, id_hash, focus & button_state_active, interaction_at);
 
 	if (state & button_state_just_active) {
@@ -1939,7 +1939,7 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 			ui_interactor_event_poke,
 			activation_start, activation_size,
 			sustain_start,    sustain_size,
-			0, &focus_state, &actor, &interaction_at);
+			&focus_state, &actor, &interaction_at);
 
 		// Push confirm is like having a regular button on the slider, and it
 		// only slides when that button is pressed.
@@ -1961,7 +1961,7 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 			ui_interactor_event_pinch,
 			activation_start, activation_size,
 			activation_start, activation_size,
-			0, &focus_state, &actor, &interaction_at);
+			&focus_state, &actor, &interaction_at);
 
 		// Pinch confirm uses a handle that the user must pinch, in order to
 		// drag it around the slider.
@@ -2122,7 +2122,7 @@ bool32_t _ui_handle_begin(ui_hash_t id, pose_t &movement, bounds_t handle, bool3
 	int32_t       interactor;
 	vec3          interact_at;
 	button_state_ focus = button_state_inactive, active = button_state_inactive;
-	ui_interaction_1h(id, ui_interactor_event_pinch, box_start, box_size, box_start, box_size, 10, &focus, &interactor, &interact_at);
+	ui_interaction_1h(id, ui_interactor_event_pinch, box_start, box_size, box_start, box_size, &focus, &interactor, &interact_at);
 
 	if (interactor != -1) {
 		ui_interactor_t* h = &skui_interactors[interactor];
@@ -2134,7 +2134,7 @@ bool32_t _ui_handle_begin(ui_hash_t id, pose_t &movement, bounds_t handle, bool3
 		active = ui_interactor_set_active(interactor, id, maintain_active || (was_focused && (focus & button_state_active) && (h->state & button_state_just_active)), interact_at);
 		// Focus can get lost if the user is dragging outside the box, so set
 		// it to focused if it's still active.
-		focus = ui_interactor_set_focus(interactor, id, active & button_state_active || focus & button_state_active, 10);
+		focus = ui_interactor_set_focus(interactor, id, active & button_state_active || focus & button_state_active, h->focused_priority);
 
 		if (active & button_state_just_active) {
 			start_handle_pos[0] = movement.position;

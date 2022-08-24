@@ -32,15 +32,19 @@ bool32_t ui_interact_box(const ui_interactor_t *actor, bounds_t box, vec3 *out_a
 		switch (actor->type) {
 		case ui_interactor_type_point: {
 			bool32_t result = ui_in_box(actor->hit_test_local.at, actor->hit_test_local.at_prev, actor->radius, box);
-			*out_at       = actor->hit_test_local.at;
-			*out_priority = bounds_sdf_manhattan(box, *out_at);
+			if (result) {
+				*out_at       = actor->hit_test_local.at;
+				*out_priority = bounds_sdf_manhattan(box, *out_at);
+			}
 			return result;
 		} break;
 		case ui_interactor_type_ray: {
 			float    dist   = 0;
 			bool32_t result = ui_intersect_box(actor->hit_test_local.ray, box, &dist);
-			*out_at = actor->hit_test_local.ray.pos + dist * actor->hit_test_local.ray.dir;
-			*out_priority = bounds_sdf_manhattan(box, *out_at);
+			if (result) {
+				*out_at       = actor->hit_test_local.ray.pos + dist * actor->hit_test_local.ray.dir;
+				*out_priority = bounds_sdf_manhattan(box, *out_at) + vec3_distance_sq(actor->hit_test_local.ray.pos, *out_at);
+			}
 			return result;
 		} break;
 		}
@@ -50,7 +54,7 @@ bool32_t ui_interact_box(const ui_interactor_t *actor, bounds_t box, vec3 *out_a
 
 ///////////////////////////////////////////
 
-void ui_interaction_1h(ui_hash_t id, ui_interactor_event_ event_mask, vec3 box_unfocused_start, vec3 box_unfocused_size, vec3 box_focused_start, vec3 box_focused_size, float priority_offset, button_state_ *out_focus_state, int32_t *out_interactor, vec3 *out_interaction_at_local) {
+void ui_interaction_1h(ui_hash_t id, ui_interactor_event_ event_mask, vec3 box_unfocused_start, vec3 box_unfocused_size, vec3 box_focused_start, vec3 box_focused_size, button_state_ *out_focus_state, int32_t *out_interactor, vec3 *out_interaction_at_local) {
 	*out_interactor           = -1;
 	*out_focus_state          = button_state_inactive;
 	*out_interaction_at_local = vec3_zero;
@@ -75,7 +79,7 @@ void ui_interaction_1h(ui_hash_t id, ui_interactor_event_ event_mask, vec3 box_u
 		float         priority = 0;
 		vec3          interact_at;
 		bool          in_box   = ui_interact_box(actor, bounds, &interact_at, &priority);
-		button_state_ focus    = ui_interactor_set_focus(i, id, in_box, priority + priority_offset);
+		button_state_ focus    = ui_interactor_set_focus(i, id, in_box, priority);
 		if (focus != button_state_inactive) {
 			*out_interactor           = i;
 			*out_focus_state          = focus;
