@@ -24,7 +24,7 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 
 	ui_hash_t id_hash  = ui_stack_hash(id);
 	bool      result   = false;
-	vec3      box_size = vec3{ final_size.x, final_size.y, skui_settings.depth/2 };
+	vec3      box_size = vec3{ final_size.x, final_size.y, skui_settings.depth };
 
 	// Find out if the user is trying to focus this UI element
 	button_state_ focus;
@@ -45,7 +45,7 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 
 	if (state & button_state_just_active)
 		ui_anim_start(id_hash);
-	float color_blend = skui_input_target == id_hash || focus & button_state_active ? 2.f : 1;
+	float color_blend = (skui_input_target == id_hash) || (focus & button_state_active) ? 2.f : 1;
 	if (ui_anim_has(id_hash, .2f)) {
 		float t     = ui_anim_elapsed    (id_hash, .2f);
 		color_blend = math_ease_overshoot(1, 2.f, 40, t);
