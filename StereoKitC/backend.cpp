@@ -88,6 +88,15 @@ void backend_openxr_ext_request(const char *extension_name) {
 
 ///////////////////////////////////////////
 
+void backend_openxr_use_minimum_exts(bool32_t use_minimum_exts) {
+	if (sk_initialized) {
+		log_err("backend_openxr_use_minimum_exts must be called BEFORE StereoKit initialization!");
+		return;
+	}
+}
+
+///////////////////////////////////////////
+
 void backend_openxr_add_callback_pre_session_create(void (*on_pre_session_create)(void* context), void* context) {
 	if (sk_initialized) {
 		log_err("backend_openxr_add_callback_pre_session_create must be called BEFORE StereoKit initialization!");
@@ -238,6 +247,16 @@ void* backend_opengl_egl_get_context(){
 	return nullptr;
 #else
 	return skg_get_platform_data()._egl_context;
+#endif
+}
+///////////////////////////////////////////
+
+void* backend_opengl_egl_get_config(){
+#if !defined(_SKG_GL_LOAD_EGL)
+	log_err(backend_err_wrong_backend);
+	return nullptr;
+#else
+	return skg_get_platform_data()._egl_config;
 #endif
 }
 

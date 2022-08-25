@@ -3,7 +3,7 @@
 #define SK_VERSION_MAJOR 0
 #define SK_VERSION_MINOR 3
 #define SK_VERSION_PATCH 7
-#define SK_VERSION_PRERELEASE 2
+#define SK_VERSION_PRERELEASE 3
 
 #if defined(__GNUC__) || defined(__clang__)
 	#define SK_DEPRECATED __attribute__((deprecated))
@@ -291,6 +291,7 @@ typedef struct sk_settings_t {
 	int32_t        flatscreen_width;
 	int32_t        flatscreen_height;
 	bool32_t       disable_flatscreen_mr_sim;
+	bool32_t       disable_desktop_input_window;
 	bool32_t       disable_unfocused_sleep;
 
 	void          *android_java_vm;  // JavaVM*
@@ -841,7 +842,7 @@ SK_API tex_t        tex_create_cubemap_files(const char **cube_face_file_xxyyzz,
 SK_API void         tex_set_id              (tex_t texture, const char *id);
 SK_API const char*  tex_get_id              (const tex_t texture);
 SK_API void         tex_set_fallback        (tex_t texture, tex_t fallback);
-SK_API void         tex_set_surface         (tex_t texture, void *native_surface, tex_type_ type, int64_t native_fmt, int32_t width, int32_t height, int32_t surface_count);
+SK_API void         tex_set_surface         (tex_t texture, void *native_surface, tex_type_ type, int64_t native_fmt, int32_t width, int32_t height, int32_t surface_count, bool32_t owned sk_default(true));
 SK_API void         tex_addref              (tex_t texture);
 SK_API void         tex_release             (tex_t texture);
 SK_API asset_state_ tex_asset_state         (const tex_t texture);
@@ -1018,12 +1019,14 @@ SK_API void              material_set_wireframe   (material_t material, bool32_t
 SK_API void              material_set_depth_test  (material_t material, depth_test_ depth_test_mode);
 SK_API void              material_set_depth_write (material_t material, bool32_t write_enabled);
 SK_API void              material_set_queue_offset(material_t material, int32_t offset);
+SK_API void              material_set_chain       (material_t material, material_t chain_material);
 SK_API transparency_     material_get_transparency(material_t material);
 SK_API cull_             material_get_cull        (material_t material);
 SK_API bool32_t          material_get_wireframe   (material_t material);
 SK_API depth_test_       material_get_depth_test  (material_t material);
 SK_API bool32_t          material_get_depth_write (material_t material);
 SK_API int32_t           material_get_queue_offset(material_t material);
+SK_API material_t        material_get_chain       (material_t material);
 SK_API void              material_set_float       (material_t material, const char *name, float    value);
 SK_API void              material_set_vector2     (material_t material, const char *name, vec2     value);
 SK_API void              material_set_vector3     (material_t material, const char *name, vec3     value);
@@ -1042,6 +1045,16 @@ SK_API void              material_set_uint4       (material_t material, const ch
 SK_API void              material_set_matrix      (material_t material, const char *name, matrix   value);
 SK_API bool32_t          material_set_texture     (material_t material, const char *name, tex_t    value);
 SK_API bool32_t          material_set_texture_id  (material_t material, uint64_t    id,   tex_t    value);
+SK_API float             material_get_float       (material_t material, const char *name);
+SK_API vec2              material_get_vector2     (material_t material, const char *name);
+SK_API vec3              material_get_vector3     (material_t material, const char *name);
+SK_API color128          material_get_color       (material_t material, const char *name);
+SK_API vec4              material_get_vector4     (material_t material, const char *name);
+SK_API int32_t           material_get_int         (material_t material, const char *name);
+SK_API bool32_t          material_get_bool        (material_t material, const char *name);
+SK_API uint32_t          material_get_uint        (material_t material, const char *name);
+SK_API matrix            material_get_matrix      (material_t material, const char *name);
+SK_API tex_t             material_get_texture     (material_t material, const char *name);
 SK_API bool32_t          material_has_param       (material_t material, const char *name, material_param_ type);
 SK_API void              material_set_param       (material_t material, const char *name, material_param_ type, const void *value);
 SK_API void              material_set_param_id    (material_t material, uint64_t    id,   material_param_ type, const void *value);
@@ -1962,6 +1975,7 @@ SK_API int64_t           backend_openxr_get_eyes_sample_time();
 SK_API void             *backend_openxr_get_function        (const char *function_name);
 SK_API bool32_t          backend_openxr_ext_enabled         (const char *extension_name);
 SK_API void              backend_openxr_ext_request         (const char *extension_name);
+SK_API void              backend_openxr_use_minimum_exts    (bool32_t use_minimum_exts);
 SK_API void              backend_openxr_composition_layer   (void *XrCompositionLayerBaseHeader, int32_t layer_size, int32_t sort_order);
 
 SK_API void              backend_openxr_add_callback_pre_session_create(void (*on_pre_session_create)(void* context), void* context);
@@ -1980,6 +1994,7 @@ SK_API void             *backend_opengl_glx_get_context ();
 SK_API void             *backend_opengl_glx_get_display ();
 SK_API void             *backend_opengl_glx_get_drawable();
 SK_API void             *backend_opengl_egl_get_context ();
+SK_API void             *backend_opengl_egl_get_config  ();
 SK_API void             *backend_opengl_egl_get_display ();
 
 ///////////////////////////////////////////
@@ -2013,7 +2028,7 @@ SK_API void log_unsubscribe(void (*on_log)(log_ level, const char *text));
 ///////////////////////////////////////////
 
 /*A flag for what 'type' an Asset may store.*/
-enum asset_type_ {
+typedef enum asset_type_ {
 	/*No type, this may come from some kind of invalid Asset id.*/
 	asset_type_none = 0,
 	/*A Mesh.*/
@@ -2034,7 +2049,7 @@ enum asset_type_ {
 	asset_type_sound,
 	/*A Solid.*/
 	asset_type_solid,
-};
+} asset_type_;
 
 typedef void* asset_t;
 

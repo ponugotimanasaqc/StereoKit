@@ -66,6 +66,12 @@ namespace StereoKit
 		/// You don't want this, you can disable it with this setting!</summary>
 		public  bool disableFlatscreenMRSim { get { return _disableFlatscreenMRSim > 0; } set { _disableFlatscreenMRSim = value ? 1 : 0; } }
 		private int _disableFlatscreenMRSim;
+		/// <summary>By default, StereoKit will open a desktop window for
+		/// keyboard input due to lack of XR-native keyboard APIs on many
+		/// platforms. If you don't want this, you can disable it with
+		/// this setting!</summary>
+		public  bool disableDesktopInputWindow { get { return _disableDesktopInputWindow > 0; } set { _disableDesktopInputWindow = value ? 1 : 0; } }
+		private int _disableDesktopInputWindow;
 		/// <summary>By default, StereoKit will slow down when the
 		/// application is out of focus. This is useful for saving processing
 		/// power while the app is out-of-focus, but may not always be
@@ -368,6 +374,17 @@ namespace StereoKit
 		public float scroll;
 		/// <summary>How much has the scroll wheel value changed during this frame? TODO: Units</summary>
 		public float scrollChange;
+		
+		/// <summary>Ray representing the position and orientation that the
+		/// current Input.Mouse.pos is pointing in.</summary>
+		public Ray Ray
+		{
+			get
+			{
+				NativeAPI.ray_from_mouse(pos, out Ray ray);
+				return ray;
+			}
+		}
 	}
 
 	[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
