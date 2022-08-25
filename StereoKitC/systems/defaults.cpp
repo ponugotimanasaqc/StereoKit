@@ -283,6 +283,8 @@ bool defaults_init() {
 
 	// Sounds
 	sk_default_click = sound_generate([](float t){
+		// Here's a graph of this one, for reference:
+		// https://www.desmos.com/calculator/w1uzxtf5k6
 		float x = t / 0.03f;
 		float band1 = sinf(t*7500) * (x * powf(1 - x, 10)) / 0.03f;
 		float band2 = sinf(t*4750) * (x * powf(1 - x, 12)) / 0.03f;
