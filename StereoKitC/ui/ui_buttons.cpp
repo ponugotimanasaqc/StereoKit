@@ -8,6 +8,8 @@
 namespace sk {
 
 ///////////////////////////////////////////
+// Button core behavior!                 //
+///////////////////////////////////////////
 
 void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float &finger_offset, button_state_ &button_state, button_state_ &focus_state) {
 	button_state = button_state_inactive;
@@ -59,9 +61,11 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 }
 
 ///////////////////////////////////////////
+// Image buttons                         //
+///////////////////////////////////////////
 
 template<typename C>
-bool32_t ui_button_at_g(const C *text, vec3 window_relative_pos, vec2 size) {
+bool32_t ui_button_img_at_g(const C* text, sprite_t image, ui_btn_layout_ image_layout, vec3 window_relative_pos, vec2 size) {
 	ui_hash_t     id = ui_stack_hash(text);
 	float         finger_offset;
 	button_state_ state, focus;
@@ -76,34 +80,7 @@ bool32_t ui_button_at_g(const C *text, vec3 window_relative_pos, vec2 size) {
 	}
 	color_blend = fmaxf(color_blend, 1 + 1 - (finger_offset / skui_settings.depth));
 
-	ui_draw_el(ui_vis_button, window_relative_pos,  vec3{ size.x,   size.y,   finger_offset }, ui_color_common, color_blend);
-	ui_text_in(               window_relative_pos - vec3{ size.x/2, size.y/2, finger_offset + 2*mm2m }, vec2{size.x-skui_settings.padding*2, size.y-skui_settings.padding*2}, text, text_align_center, text_align_center);
-
-	return state & button_state_just_active;
-}
-bool32_t ui_button_at   (const char     *text, vec3 window_relative_pos, vec2 size) { return ui_button_at_g<char    >(text, window_relative_pos, size); }
-bool32_t ui_button_at   (const char16_t *text, vec3 window_relative_pos, vec2 size) { return ui_button_at_g<char16_t>(text, window_relative_pos, size); }
-bool32_t ui_button_at_16(const char16_t *text, vec3 window_relative_pos, vec2 size) { return ui_button_at_g<char16_t>(text, window_relative_pos, size); }
-
-///////////////////////////////////////////
-
-template<typename C>
-bool32_t ui_button_img_at_g(const C* text, sprite_t image, ui_btn_layout_ image_layout, vec3 window_relative_pos, vec2 size) {
-	ui_hash_t     id = ui_stack_hash(text);
-	float         finger_offset;
-	button_state_ state, focus;
-	ui_button_behavior(window_relative_pos, size, id, finger_offset, state, focus);
-
-	if (state & button_state_just_active)
-		ui_anim_start(id);
-	float color_blend = state & button_state_active ? 2.f : 1;
-	if (ui_anim_has(id, .2f)) {
-		float t = ui_anim_elapsed(id, .2f);
-		color_blend = math_ease_overshoot(1, 2.f, 40, t);
-	}
-
-	float activation = 1 + 1 - (finger_offset / skui_settings.depth);
-	ui_draw_el(ui_vis_button, window_relative_pos, vec3{ size.x,size.y,finger_offset }, ui_color_common, fmaxf(activation, color_blend));
+	ui_draw_el(ui_vis_button, window_relative_pos, vec3{ size.x,size.y,finger_offset }, ui_color_common, color_blend);
 	
 	float pad2       = skui_settings.padding * 2;
 	float pad2gutter = pad2 + skui_settings.gutter;
@@ -165,28 +142,15 @@ bool32_t ui_button_img_at_16(const char16_t *text, sprite_t image, ui_btn_layout
 ///////////////////////////////////////////
 
 template<typename C>
-bool32_t ui_button_sz_g(const C *text, vec2 size) {
+bool32_t ui_button_img_sz_g(const C *text, sprite_t image, ui_btn_layout_ image_layout, vec2 size) {
 	vec3 final_pos;
 	vec2 final_size;
+
 	ui_layout_reserve_sz(size, false, &final_pos, &final_size);
-
-	return ui_button_at(text, final_pos, final_size);
+	return ui_button_img_at(text, image, image_layout, final_pos, final_size);
 }
-bool32_t ui_button_sz   (const char     *text, vec2 size) { return ui_button_sz_g<char    >(text, size); }
-bool32_t ui_button_sz_16(const char16_t *text, vec2 size) { return ui_button_sz_g<char16_t>(text, size); }
-
-///////////////////////////////////////////
-
-template<typename C, vec2 (*text_size_t)(const C *text, text_style_t style)>
-bool32_t ui_button_g(const C *text) {
-	vec3 final_pos;
-	vec2 final_size;
-	ui_layout_reserve_sz(text_size_t(text, skui_font_stack.last()), true, &final_pos, &final_size);
-
-	return ui_button_at(text, final_pos, final_size);
-}
-bool32_t ui_button   (const char     *text) { return ui_button_g<char,     text_size   >(text); }
-bool32_t ui_button_16(const char16_t *text) { return ui_button_g<char16_t, text_size_16>(text); }
+bool32_t ui_button_img_sz   (const char     *text, sprite_t image, ui_btn_layout_ image_layout, vec2 size) { return ui_button_img_sz_g<char    >(text, image, image_layout, size); }
+bool32_t ui_button_img_sz_16(const char16_t *text, sprite_t image, ui_btn_layout_ image_layout, vec2 size) { return ui_button_img_sz_g<char16_t>(text, image, image_layout, size); }
 
 ///////////////////////////////////////////
 
@@ -212,18 +176,62 @@ bool32_t ui_button_img   (const char     *text, sprite_t image, ui_btn_layout_ i
 bool32_t ui_button_img_16(const char16_t *text, sprite_t image, ui_btn_layout_ image_layout) { return ui_button_img_g<char16_t, text_size_16>(text, image, image_layout); }
 
 ///////////////////////////////////////////
+// Labeled buttons                       //
+///////////////////////////////////////////
 
 template<typename C>
-bool32_t ui_button_img_sz_g(const C *text, sprite_t image, ui_btn_layout_ image_layout, vec2 size) {
+bool32_t ui_button_at_g(const C *text, vec3 window_relative_pos, vec2 size) {
+	ui_hash_t     id = ui_stack_hash(text);
+	float         finger_offset;
+	button_state_ state, focus;
+	ui_button_behavior(window_relative_pos, size, id, finger_offset, state, focus);
+
+	if (state & button_state_just_active)
+		ui_anim_start(id);
+	float color_blend = focus & button_state_active ? 2.f : 1;
+	if (ui_anim_has(id, .2f)) {
+		float t     = ui_anim_elapsed    (id, .2f);
+		color_blend = math_ease_overshoot(1, 2.f, 40, t);
+	}
+	color_blend = fmaxf(color_blend, 1 + 1 - (finger_offset / skui_settings.depth));
+
+	ui_draw_el(ui_vis_button, window_relative_pos,  vec3{ size.x,   size.y,   finger_offset }, ui_color_common, color_blend);
+	ui_text_in(               window_relative_pos - vec3{ size.x/2, size.y/2, finger_offset + 2*mm2m }, vec2{size.x-skui_settings.padding*2, size.y-skui_settings.padding*2}, text, text_align_center, text_align_center);
+
+	return state & button_state_just_active;
+}
+bool32_t ui_button_at   (const char     *text, vec3 window_relative_pos, vec2 size) { return ui_button_at_g<char    >(text, window_relative_pos, size); }
+bool32_t ui_button_at   (const char16_t *text, vec3 window_relative_pos, vec2 size) { return ui_button_at_g<char16_t>(text, window_relative_pos, size); }
+bool32_t ui_button_at_16(const char16_t *text, vec3 window_relative_pos, vec2 size) { return ui_button_at_g<char16_t>(text, window_relative_pos, size); }
+
+///////////////////////////////////////////
+
+template<typename C>
+bool32_t ui_button_sz_g(const C *text, vec2 size) {
 	vec3 final_pos;
 	vec2 final_size;
-
 	ui_layout_reserve_sz(size, false, &final_pos, &final_size);
-	return ui_button_img_at(text, image, image_layout, final_pos, final_size);
-}
-bool32_t ui_button_img_sz   (const char     *text, sprite_t image, ui_btn_layout_ image_layout, vec2 size) { return ui_button_img_sz_g<char    >(text, image, image_layout, size); }
-bool32_t ui_button_img_sz_16(const char16_t *text, sprite_t image, ui_btn_layout_ image_layout, vec2 size) { return ui_button_img_sz_g<char16_t>(text, image, image_layout, size); }
 
+	return ui_button_at(text, final_pos, final_size);
+}
+bool32_t ui_button_sz   (const char     *text, vec2 size) { return ui_button_sz_g<char    >(text, size); }
+bool32_t ui_button_sz_16(const char16_t *text, vec2 size) { return ui_button_sz_g<char16_t>(text, size); }
+
+///////////////////////////////////////////
+
+template<typename C, vec2 (*text_size_t)(const C *text, text_style_t style)>
+bool32_t ui_button_g(const C *text) {
+	vec3 final_pos;
+	vec2 final_size;
+	ui_layout_reserve_sz(text_size_t(text, skui_font_stack.last()), true, &final_pos, &final_size);
+
+	return ui_button_at(text, final_pos, final_size);
+}
+bool32_t ui_button   (const char     *text) { return ui_button_g<char,     text_size   >(text); }
+bool32_t ui_button_16(const char16_t *text) { return ui_button_g<char16_t, text_size_16>(text); }
+
+///////////////////////////////////////////
+// Toggle buttons                        //
 ///////////////////////////////////////////
 
 template<typename C>
@@ -257,6 +265,19 @@ bool32_t ui_toggle_at_16(const char16_t *text, bool32_t &pressed, vec3 window_re
 
 ///////////////////////////////////////////
 
+template<typename C>
+bool32_t ui_toggle_sz_g(const C *text, bool32_t &pressed, vec2 size) {
+	vec3 final_pos;
+	vec2 final_size;
+	ui_layout_reserve_sz(size, false, &final_pos, &final_size);
+
+	return ui_toggle_at(text, pressed, final_pos, final_size);
+}
+bool32_t ui_toggle_sz   (const char     *text, bool32_t &pressed, vec2 size) { return ui_toggle_sz_g<char    >(text, pressed, size); }
+bool32_t ui_toggle_sz_16(const char16_t *text, bool32_t &pressed, vec2 size) { return ui_toggle_sz_g<char16_t>(text, pressed, size); }
+
+///////////////////////////////////////////
+
 template<typename C, vec2 (*text_size_t)(const C *text, text_style_t style)>
 bool32_t ui_toggle_g(const C *text, bool32_t &pressed) {
 	vec3 final_pos;
@@ -269,18 +290,7 @@ bool32_t ui_toggle   (const char     *text, bool32_t &pressed) { return ui_toggl
 bool32_t ui_toggle_16(const char16_t *text, bool32_t &pressed) { return ui_toggle_g<char16_t, text_size_16>(text, pressed); }
 
 ///////////////////////////////////////////
-
-template<typename C>
-bool32_t ui_toggle_sz_g(const C *text, bool32_t &pressed, vec2 size) {
-	vec3 final_pos;
-	vec2 final_size;
-	ui_layout_reserve_sz(size, false, &final_pos, &final_size);
-
-	return ui_toggle_at(text, pressed, final_pos, final_size);
-}
-bool32_t ui_toggle_sz   (const char     *text, bool32_t &pressed, vec2 size) { return ui_toggle_sz_g<char    >(text, pressed, size); }
-bool32_t ui_toggle_sz_16(const char16_t *text, bool32_t &pressed, vec2 size) { return ui_toggle_sz_g<char16_t>(text, pressed, size); }
-
+// Round buttons                         //
 ///////////////////////////////////////////
 
 template<typename C>
@@ -327,6 +337,6 @@ bool32_t ui_button_round_g(const C *id, sprite_t image, float diameter) {
 
 	return ui_button_round_at(id, image, final_pos, final_size.x);
 }
-bool32_t ui_button_round   (const char     *id, sprite_t image, float diameter) { return ui_button_round_g<char>(id, image, diameter); }
+bool32_t ui_button_round   (const char     *id, sprite_t image, float diameter) { return ui_button_round_g<char    >(id, image, diameter); }
 bool32_t ui_button_round_16(const char16_t *id, sprite_t image, float diameter) { return ui_button_round_g<char16_t>(id, image, diameter); }
 }
