@@ -84,9 +84,11 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 					int32_t count = maxi(skui_input_carat, skui_input_carat_end) - start;
 					utf_remove_chars(utf_advance_chars(buffer, start), count);
 					skui_input_carat_end = skui_input_carat = start;
+					result = true;
 				} else if (skui_input_carat > 0) {
 					skui_input_carat_end = skui_input_carat = skui_input_carat - 1;
 					utf_remove_chars(utf_advance_chars(buffer, skui_input_carat), 1);
+					result = true;
 				}
 			} else if (curr == 0x7f) {
 				if (skui_input_carat != skui_input_carat_end) {
@@ -94,8 +96,10 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 					int32_t count = maxi(skui_input_carat, skui_input_carat_end) - start;
 					utf_remove_chars(utf_advance_chars(buffer, start), count);
 					skui_input_carat_end = skui_input_carat = start;
+					result = true;
 				} else if (skui_input_carat >= 0) {
 					utf_remove_chars(utf_advance_chars(buffer, skui_input_carat), 1);
+					result = true;
 				}
 			} else if (curr == 0x0D) { // Enter, carriage return
 				skui_input_target = 0;

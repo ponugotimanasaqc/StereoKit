@@ -5,6 +5,13 @@
 
 ///////////////////////////////////////////
 
+// In Unicode, a CODEPOINT is a full character, we can think of this as a
+// single char32_t. In utf8 and utf16, it takes multiple CODEUNITs to represent
+// a full codepoint (up to 4 char, and 2 char16_t).
+// 
+// This code does not currently communicate consistently in these terms, but
+// for clarity's sake, should.
+
 char32_t utf8_decode_fast   (const char* utf8_str, const char** out_next_char);
 bool     utf8_decode_fast_b (const char* utf8_str, const char** out_next_char, char32_t* out_char);
 char32_t utf8_decode        (const char* utf8_str, const char** out_next_char, int32_t* out_err);
