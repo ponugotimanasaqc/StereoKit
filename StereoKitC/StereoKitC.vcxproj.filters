@@ -208,6 +208,9 @@
     <ClCompile Include="ui\ui_buttons.cpp">
       <Filter>ui</Filter>
     </ClCompile>
+    <ClCompile Include="ui\ui_text_input.cpp">
+      <Filter>ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stereokit.h" />
@@ -474,9 +477,6 @@
     </ClInclude>
     <ClInclude Include="xr_backends\openxr_view.h">
       <Filter>xr_backends</Filter>
-    </ClInclude>
-    <ClInclude Include="ui\ui_buttons.h">
-      <Filter>ui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

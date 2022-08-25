@@ -2,7 +2,6 @@
 #include "../stereokit_ui.h"
 #include "../_stereokit_ui.h"
 #include "../sk_math.h"
-#include "ui_buttons.h"
 #include "ui_interaction.h"
 
 namespace sk {
