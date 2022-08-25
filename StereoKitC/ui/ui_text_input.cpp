@@ -82,20 +82,20 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 				if (skui_input_carat != skui_input_carat_end) {
 					int32_t start = mini(skui_input_carat, skui_input_carat_end);
 					int32_t count = maxi(skui_input_carat, skui_input_carat_end) - start;
-					utf_remove_chars(buffer + start, count);
+					utf_remove_chars(utf_advance_chars(buffer, start), count);
 					skui_input_carat_end = skui_input_carat = start;
 				} else if (skui_input_carat > 0) {
 					skui_input_carat_end = skui_input_carat = skui_input_carat - 1;
-					utf_remove_chars(buffer + skui_input_carat, 1);
+					utf_remove_chars(utf_advance_chars(buffer, skui_input_carat), 1);
 				}
 			} else if (curr == 0x7f) {
 				if (skui_input_carat != skui_input_carat_end) {
 					int32_t start = mini(skui_input_carat, skui_input_carat_end);
 					int32_t count = maxi(skui_input_carat, skui_input_carat_end) - start;
-					utf_remove_chars(buffer + start, count);
+					utf_remove_chars(utf_advance_chars(buffer, start), count);
 					skui_input_carat_end = skui_input_carat = start;
 				} else if (skui_input_carat >= 0) {
-					utf_remove_chars(buffer + skui_input_carat, 1);
+					utf_remove_chars(utf_advance_chars(buffer, skui_input_carat), 1);
 				}
 			} else if (curr == 0x0D) { // Enter, carriage return
 				skui_input_target = 0;
@@ -115,10 +115,10 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 				if (skui_input_carat != skui_input_carat_end) {
 					int32_t start = mini(skui_input_carat, skui_input_carat_end);
 					int32_t count = maxi(skui_input_carat, skui_input_carat_end) - start;
-					utf_remove_chars(buffer + start, count);
+					utf_remove_chars(utf_advance_chars(buffer, start), count);
 					skui_input_carat_end = skui_input_carat = start;
 				}
-				utf_insert_char(buffer, buffer_size, buffer + skui_input_carat, add);
+				utf_insert_char(buffer, buffer_size, utf_advance_chars(buffer, skui_input_carat), add);
 				skui_input_carat += 1;
 				skui_input_carat_end = skui_input_carat;
 				result = true;
