@@ -31,7 +31,11 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 	int32_t       interactor;
 	vec3          interaction_at;
 	ui_interaction_1h(id_hash, ui_interactor_event_poke, final_pos, box_size, final_pos, box_size, &focus, &interactor, &interaction_at);
-	button_state_ state = ui_interactor_set_active(interactor, id_hash, focus & button_state_active, interaction_at);
+
+	bool32_t is_active = interactor != -1 && (
+		(skui_interactors[interactor].type == ui_interactor_type_point && (focus & button_state_active)) ||
+		(skui_interactors[interactor].type == ui_interactor_type_ray   && (skui_interactors[interactor].state & button_state_just_active)));
+	button_state_ state = ui_interactor_set_active(interactor, id_hash, is_active, interaction_at);
 
 	if (state & button_state_just_active) {
 		platform_keyboard_show(true,type);
@@ -41,7 +45,7 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 
 	if (state & button_state_just_active)
 		ui_anim_start(id_hash);
-	float color_blend = skui_input_target == id_hash ? 2.f : 1;
+	float color_blend = skui_input_target == id_hash || focus & button_state_active ? 2.f : 1;
 	if (ui_anim_has(id_hash, .2f)) {
 		float t     = ui_anim_elapsed    (id_hash, .2f);
 		color_blend = math_ease_overshoot(1, 2.f, 40, t);
@@ -115,6 +119,12 @@ bool32_t ui_input(const char *id, char *buffer, int32_t buffer_size, vec2 size, 
 }
 bool32_t ui_input_16(const char16_t *id, char16_t *buffer, int32_t buffer_size, vec2 size, text_context_ type) {
 	return ui_input_g<char16_t, text_size_16>(id, buffer, buffer_size, size, type);
+}
+
+///////////////////////////////////////////
+
+bool32_t ui_has_keyboard_focus() {
+	return skui_input_target != 0;
 }
 
 }
