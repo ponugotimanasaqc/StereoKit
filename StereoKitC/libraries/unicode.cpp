@@ -313,7 +313,7 @@ bool utf_remove_chars(char16_t* at_utf16, int32_t codepoint_count) {
 		if      (*curr == '\0')                    break;
 		else if (*curr < 0xD800 || *curr > 0xDFFF) remove += 1;
 		else                                       remove += 2;
-		curr = curr + remove;
+		curr = at_utf16 + remove;
 	}
 	
 	size_t  len  = strlen(at_utf16)+1;
