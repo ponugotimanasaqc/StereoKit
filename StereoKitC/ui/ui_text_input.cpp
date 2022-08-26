@@ -47,7 +47,7 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 		platform_keyboard_show(true,type);
 		skui_input_blink  = time_getf();
 		skui_input_target = id_hash;
-		skui_input_carat  = skui_input_carat_end = utf_charlen(buffer);
+		skui_input_carat  = skui_input_carat_end = (int32_t)utf_charlen(buffer);
 		sound_play(skui_snd_interact, skui_interactors[interactor].hit_test_world.at, 1);
 	}
 

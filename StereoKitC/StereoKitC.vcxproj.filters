@@ -211,6 +211,9 @@
     <ClCompile Include="ui\ui_text_input.cpp">
       <Filter>ui</Filter>
     </ClCompile>
+    <ClCompile Include="libraries\unicode.cpp">
+      <Filter>libraries</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stereokit.h" />

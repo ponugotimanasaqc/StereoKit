@@ -308,7 +308,7 @@ struct hashmap_t {
 
 		// When this searches _past_ a certain distance for a free slot, then
 		// we should resize the hashmap.
-		int32_t search_distance = capacity * _hashmap_search_dist_pct;
+		int32_t search_distance = (int32_t)(capacity * _hashmap_search_dist_pct);
 		if (search_distance < _hashmap_search_dist_min)
 			search_distance = _hashmap_search_dist_min;
 		
@@ -345,7 +345,7 @@ struct hashmap_t {
 		uint64_t hash = _hash(key);
 		int32_t  id   = hash % capacity;
 
-		int32_t search_distance = capacity * _hashmap_search_dist_pct;
+		int32_t search_distance = (int32_t)(capacity * _hashmap_search_dist_pct);
 		if (search_distance < _hashmap_search_dist_min)
 			search_distance = _hashmap_search_dist_min;
 
