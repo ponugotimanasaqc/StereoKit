@@ -648,6 +648,7 @@ bool ui_init() {
 	hand.pos_smoothing = .6f;
 	hand.rot_smoothing = .4f;
 	hand.radius        = 0;
+	hand.show_ray      = true;
 	skui_interactors.add(hand);
 	skui_interactors.add(hand);
 
@@ -711,8 +712,9 @@ void ui_update() {
 		actor->hit_test_world.at      = hand->pinch_pt;
 		actor->hit_test_local.at_prev = actor->hit_test_world.at_prev;
 		actor->hit_test_local.at      = hand->pinch_pt;
-		actor->motion_pose_world        = hand->palm;
+		actor->motion_pose_world      = hand->palm;
 		actor->radius            = hand->fingers[1][4].radius;
+		
 		actor->tracked           = hand->tracked_state;
 		actor->activation        = hand->pinch_activation;
 		actor->state             = hand->pinch_state;
@@ -736,29 +738,9 @@ void ui_update() {
 		actor->motion_pose_world  = { pointer->ray.pos, pointer->orientation };
 		actor->motion_pose_local  = { pointer->ray.pos, pointer->orientation };
 		
-		actor->tracked            = pointer->tracked;
-		actor->activation         = pointer->state & button_state_active?1:0;
-		actor->state              = pointer->state;
-
-		//bool was_ray_enabled = true;// skui_hand[i].ray_enabled && !skui_hand[i].ray_discard;
-
-		//// draw hand rays
-		//skui_hand[i].ray_visibility = math_lerp(skui_hand[i].ray_visibility,
-		//	was_ray_enabled && skui_enable_far_interact && skui_hand[i].ray_enabled && !skui_hand[i].ray_discard ? 1.0f : 0.0f,
-		//	20.0f * time_elapsedf_unscaled());
-		//if (skui_hand[i].focused_prev != 0) skui_hand[i].ray_visibility = 0;
-		//if (skui_hand[i].ray_visibility > 0.004f) {
-		//	ray_t       r     = input_get_pointer(input_hand_pointer_id[i])->ray;
-		//	const float scale = 2;
-		//	line_point_t points[5] = {
-		//		line_point_t{r.pos+r.dir*(0.07f              ), 0.001f,  color32{255,255,255,0}},
-		//		line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 60 )}},
-		//		line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 80)}},
-		//		line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(skui_hand[i].ray_visibility * 25 )}},
-		//		line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
-		//	line_add_listv(points, 5);
-		//}
-		//skui_hand[i].ray_discard = false;
+		actor->tracked            = hand->tracked_state;//pointer->tracked;
+		actor->activation         = hand->pinch_activation;  pointer->state& button_state_active ? 1 : 0;
+		actor->state              = hand->pinch_state;
 	}
 
 	// Mouse ray
@@ -786,13 +768,25 @@ void ui_update() {
 		if (actor->ray_visibility > 0.004f) {
 			ray_t       r     = actor->hit_test_world.ray;
 			const float scale = 2;
-			line_point_t points[5] = {
-				line_point_t{r.pos+r.dir*(0.07f              ), 0.001f,  color32{255,255,255,0}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 60 )}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 80 )}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 25 )}},
-				line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
-			line_add_listv(points, 5);
+			
+			if (actor->active_prev != 0) {
+				vec3 dir = matrix_transform_pt(pose_matrix(actor->motion_pose_world), actor->hit_at_action_local);
+				line_point_t points[5] = {
+					line_point_t{r.pos + dir * (0.07f), 0.001f,  color32{255,255,255,0}},
+					line_point_t{r.pos + dir * (0.07f + 0.09f), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 60)}},
+					line_point_t{r.pos + dir * (0.07f + 0.18f), 0.0020f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 80)}},
+					line_point_t{r.pos + dir * (0.07f + 0.63f), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 25)}},
+					line_point_t{r.pos + dir,                   0.001f,  color32{255,255,255,0}} };
+				line_add_listv(points, 5);
+			} else {
+				line_point_t points[5] = {
+					line_point_t{r.pos+r.dir*(0.07f              ), 0.001f,  color32{255,255,255,0}},
+					line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 60 )}},
+					line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 80 )}},
+					line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 25 )}},
+					line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
+				line_add_listv(points, 5);
+			}
 		}
 	}
 

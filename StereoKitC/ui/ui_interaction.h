@@ -56,14 +56,20 @@ struct ui_interactor_t {
 	float                pos_smoothing;
 	bool32_t             show_ray;
 	float                ray_visibility;
+
+	float                ray_minimum_dist;
+	float                head_minimum_dist;
 	
 	pose_t               motion_pose_world;
 	pose_t               motion_pose_local;
 	pose_t               motion_pose_world_action;
+	
 	ui_interactor_pos_t  hit_test_world;
 	ui_interactor_pos_t  hit_test_local;
 	ui_interactor_pos_t  hit_test_world_action;
+	
 	vec3                 hit_at_world;
+	vec3                 hit_at_action_local;
 };
 
 typedef int32_t ui_interactor_id_t;

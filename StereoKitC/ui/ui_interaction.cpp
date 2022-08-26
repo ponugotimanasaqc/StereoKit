@@ -304,6 +304,7 @@ button_state_ ui_interactor_set_active(ui_interactor_id_t interactor, ui_hash_t 
 		actor->motion_pose_world_action = actor->motion_pose_world;
 		actor->hit_test_world_action    = actor->hit_test_world;
 		actor->hit_at_world             = hierarchy_to_world_point(at);
+		actor->hit_at_action_local      = matrix_transform_pt(matrix_invert(pose_matrix(actor->motion_pose_world)), actor->hit_at_world);
 	}
 	
 	return result;
