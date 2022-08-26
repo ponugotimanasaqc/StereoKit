@@ -628,7 +628,7 @@ bool ui_init() {
 	ui_interactor_t hand = {};
 	
 	// Hand poke
-	/*hand.type = ui_interactor_type_point;
+	hand.type = ui_interactor_type_point;
 	hand.events = ui_interactor_event_poke;
 	hand.pos_smoothing = .6f;
 	hand.rot_smoothing = .4f;
@@ -643,21 +643,21 @@ bool ui_init() {
 	skui_interactors.add(hand);
 
 	// Hand ray
-	hand.type   = ui_interactor_type_ray;
+	hand.type = ui_interactor_type_ray;
 	hand.events = (ui_interactor_event_)(ui_interactor_event_poke | ui_interactor_event_pinch);
 	hand.pos_smoothing = .6f;
 	hand.rot_smoothing = .4f;
 	hand.radius        = 0;
 	skui_interactors.add(hand);
-	skui_interactors.add(hand);*/
+	skui_interactors.add(hand);
 
-	ui_interactor_t mouse = {};
+	/*ui_interactor_t mouse = {};
 	mouse.type   = ui_interactor_type_ray;
 	mouse.events = (ui_interactor_event_)(ui_interactor_event_poke | ui_interactor_event_pinch);
 	mouse.pos_smoothing = 1;
 	mouse.rot_smoothing = 1;
 	mouse.radius        = 0;
-	skui_interactors.add(mouse);
+	skui_interactors.add(mouse);*/
 
 	return true;
 }
@@ -667,7 +667,19 @@ bool ui_init() {
 void ui_update() {
 	const matrix *to_local = hierarchy_to_local();
 
-	/*for (int32_t i = 0; i < handed_max; i++) {
+	// Take care of common attributes
+	for (int32_t i = 0; i < skui_interactors.count; i++) {
+		ui_interactor_t* actor = &skui_interactors[i];
+
+		actor->focused_prev = actor->focused;
+		actor->active_prev  = actor->active;
+
+		actor->focused_priority = FLT_MAX;
+		actor->focused = 0;
+		actor->active  = 0;
+	}
+
+	for (int32_t i = 0; i < handed_max; i++) {
 	// Hand poke
 		const hand_t    *hand    = input_hand((handed_)i);
 		const pointer_t *pointer = input_get_pointer(input_hand_pointer_id[i]);
@@ -680,13 +692,6 @@ void ui_update() {
 		actor->motion_pose_world        = hand->palm;
 		actor->radius            = hand->fingers[1][4].radius;
 		actor->tracked           = hand->tracked_state;
-
-		actor->focused_prev      = actor->focused;
-		actor->active_prev       = actor->active;
-
-		actor->focused_priority  = FLT_MAX;
-		actor->focused           = 0;
-		actor->active            = 0;
 
 		// Don't let the hand trigger things while popping in and out of
 		// tracking
@@ -712,13 +717,6 @@ void ui_update() {
 		actor->activation        = hand->pinch_activation;
 		actor->state             = hand->pinch_state;
 
-		actor->focused_prev      = actor->focused;
-		actor->active_prev       = actor->active;
-
-		actor->focused_priority  = FLT_MAX;
-		actor->focused           = 0;
-		actor->active            = 0;
-
 		// Don't let the hand trigger things while popping in and out of
 		// tracking
 		if (hand->tracked_state & button_state_just_active) {
@@ -742,12 +740,6 @@ void ui_update() {
 		actor->activation         = pointer->state & button_state_active?1:0;
 		actor->state              = pointer->state;
 
-		actor->focused_prev       = actor->focused;
-		actor->active_prev        = actor->active;
-		actor->focused_priority   = FLT_MAX;
-		actor->focused            = 0;
-		actor->active             = 0;
-
 		//bool was_ray_enabled = true;// skui_hand[i].ray_enabled && !skui_hand[i].ray_discard;
 
 		//// draw hand rays
@@ -767,10 +759,10 @@ void ui_update() {
 		//	line_add_listv(points, 5);
 		//}
 		//skui_hand[i].ray_discard = false;
-	}*/
+	}
 
 	// Mouse ray
-	ui_interactor_t* actor = &skui_interactors.last();
+	/*ui_interactor_t* actor = &skui_interactors.last();
 	ray_t    mouse_ray = {};
 	bool32_t mouse_tracked = ray_from_mouse(input_mouse()->pos, mouse_ray);
 	if (mouse_tracked) {
@@ -784,13 +776,25 @@ void ui_update() {
 
 	actor->tracked    = button_make_state(actor->tracked & button_state_active, mouse_tracked);
 	actor->state      = input_key(key_mouse_left);
-	actor->activation = actor->state & button_state_active ? 1 : 0;
+	actor->activation = actor->state & button_state_active ? 1 : 0;*/
 
-	actor->focused_prev     = actor->focused;
-	actor->active_prev      = actor->active;
-	actor->focused_priority = FLT_MAX;
-	actor->focused          = 0;
-	actor->active           = 0;
+	for (int32_t i = 0; i < skui_interactors.count; i++) {
+		ui_interactor_t* actor = &skui_interactors[i];
+		if (!actor->show_ray) continue;
+
+		actor->ray_visibility = math_lerp(actor->ray_visibility, actor->focused_prev != 0 ? 1 : 0, 20.0f * time_elapsedf_unscaled());
+		if (actor->ray_visibility > 0.004f) {
+			ray_t       r     = actor->hit_test_world.ray;
+			const float scale = 2;
+			line_point_t points[5] = {
+				line_point_t{r.pos+r.dir*(0.07f              ), 0.001f,  color32{255,255,255,0}},
+				line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 60 )}},
+				line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 80 )}},
+				line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 25 )}},
+				line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
+			line_add_listv(points, 5);
+		}
+	}
 
 	ui_push_surface(pose_identity);
 

@@ -54,6 +54,8 @@ struct ui_interactor_t {
 	float                radius;
 	float                rot_smoothing;
 	float                pos_smoothing;
+	bool32_t             show_ray;
+	float                ray_visibility;
 	
 	pose_t               motion_pose_world;
 	pose_t               motion_pose_local;
