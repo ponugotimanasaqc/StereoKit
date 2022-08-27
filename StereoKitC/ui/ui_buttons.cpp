@@ -33,7 +33,7 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 
 	vec3  box_size  = vec3{ size.x + 2*interact_radius, size.y + 2*interact_radius, activation_plane + 6*interact_radius  };
 	vec3  box_start = window_relative_pos + vec3{ interact_radius, interact_radius, -activation_plane + box_size.z };
-	ui_interaction_1h(id, ui_interactor_event_poke,
+	interactor_volume_1h(id, interactor_event_poke,
 		activation_start, activation_size,
 		box_start,        box_size,
 		&focus_state, &interactor, &interaction_at);
@@ -41,7 +41,7 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 	// If a hand is interacting, adjust the button surface accordingly
 	finger_offset = skui_settings.depth;
 	if (focus_state & button_state_active) {
-		ui_interactor_t* actor = &skui_interactors[interactor];
+		interactor_t* actor = &skui_interactors[interactor];
 
 		finger_offset = -(interaction_at.z+actor->radius) - window_relative_pos.z;
 		bool pressed  = finger_offset < skui_settings.depth / 2;
@@ -49,10 +49,10 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 			pressed = true;
 			finger_offset = 0;
 		}
-		button_state  = ui_interactor_set_active(interactor, id, pressed, interaction_at);
+		button_state  = interactor_set_active(interactor, id, pressed, interaction_at);
 		finger_offset = fminf(fmaxf(2*mm2m, finger_offset), skui_settings.depth);
 	} else if (focus_state & button_state_just_inactive) {
-		button_state = ui_interactor_set_active(interactor, id, false, interaction_at);
+		button_state = interactor_set_active(interactor, id, false, interaction_at);
 	}
 	
 	if      (button_state & button_state_just_active)   sound_play(skui_snd_interact,   skui_interactors[interactor]._hit_at_world, 1);

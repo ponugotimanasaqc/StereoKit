@@ -36,12 +36,12 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 	button_state_ focus;
 	int32_t       interactor;
 	vec3          interaction_at;
-	ui_interaction_1h(id_hash, ui_interactor_event_poke, final_pos, box_size, final_pos, box_size, &focus, &interactor, &interaction_at);
+	interactor_volume_1h(id_hash, interactor_event_poke, final_pos, box_size, final_pos, box_size, &focus, &interactor, &interaction_at);
 
 	bool32_t is_active = interactor != -1 && (
-		(skui_interactors[interactor].type == ui_interactor_type_point && (focus & button_state_active)) ||
-		(skui_interactors[interactor].type == ui_interactor_type_ray   && (skui_interactors[interactor].state & button_state_just_active)));
-	button_state_ state = ui_interactor_set_active(interactor, id_hash, is_active, interaction_at);
+		(skui_interactors[interactor].type == interactor_type_point && (focus & button_state_active)) ||
+		(skui_interactors[interactor].type == interactor_type_ray   && (skui_interactors[interactor].state & button_state_just_active)));
+	button_state_ state = interactor_set_active(interactor, id_hash, is_active, interaction_at);
 
 	if (state & button_state_just_active) {
 		platform_keyboard_show(true,type);
@@ -62,8 +62,8 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 	// Unfocus this if the user starts interacting with something else
 	if (skui_input_target == id_hash) {
 		for (int32_t i = 0; i < skui_interactors.count; i++) {
-			if (ui_interactor_is_preoccupied(i, id_hash, false)) {
-				const ui_interactor_t *actor = &skui_interactors[i];
+			if (interactor_is_preoccupied(i, id_hash, false)) {
+				const interactor_t *actor = &skui_interactors[i];
 				if (actor->focused && skui_preserve_keyboard_ids_read->index_of(actor->focused) < 0) {
 					skui_input_target = 0;
 					platform_keyboard_show(false, type);

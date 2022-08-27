@@ -265,6 +265,8 @@ bool utf_remove_chars(char* at_utf8, int32_t count) {
 	int32_t copy = len < remove ? remove : len;
 	for (int32_t i = 0; i < copy; i++) 
 		at_utf8[i] = at_utf8[i + remove];
+
+	return copy > 0;
 }
 
 ///////////////////////////////////////////
@@ -320,6 +322,8 @@ bool utf_remove_chars(char16_t* at_utf16, int32_t codepoint_count) {
 	int32_t copy = len < remove ? remove : len;
 	for (int32_t i = 0; i < copy; i++) 
 		at_utf16[i] = at_utf16[i + remove];
+
+	return copy > 0;
 }
 
 ///////////////////////////////////////////
