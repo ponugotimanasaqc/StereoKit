@@ -10,12 +10,12 @@ void  ui_update      ();
 void  ui_update_late ();
 void  ui_shutdown    ();
 
-ui_hash_t ui_stack_hash(const char16_t* string);
+id_hash_t ui_stack_hash(const char16_t* string);
 
 // Animation
-void  ui_anim_start  (ui_hash_t id);
-bool  ui_anim_has    (ui_hash_t id, float duration);
-float ui_anim_elapsed(ui_hash_t id, float duration = 1, float max = 1);
+void  ui_anim_start  (id_hash_t id);
+bool  ui_anim_has    (id_hash_t id, float duration);
+float ui_anim_elapsed(id_hash_t id, float duration = 1, float max = 1);
 
 // Theming
 mesh_t     ui_get_mesh    (ui_vis_ element_visual);

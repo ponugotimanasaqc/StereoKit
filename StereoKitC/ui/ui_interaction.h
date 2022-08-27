@@ -38,10 +38,10 @@ struct interactor_t {
 	float                activation;
 	
 	float                focused_priority;
-	ui_hash_t            focused_prev;
-	ui_hash_t            focused;
-	ui_hash_t            active_prev;
-	ui_hash_t            active;
+	id_hash_t            focused_prev;
+	id_hash_t            focused;
+	id_hash_t            active_prev;
+	id_hash_t            active;
 	
 	// Information about the location and shape of the interactor
 	float                radius;
@@ -76,14 +76,14 @@ bool32_t        interactor_check_box     (const interactor_t* actor, bounds_t bo
 
 void            interactor_update_local  (matrix to_local);
 
-void            interactor_volume_1h     (ui_hash_t id, interactor_event_ event_mask, vec3 box_unfocused_start, vec3 box_unfocused_size, vec3 box_focused_start, vec3 box_focused_size, button_state_* out_focus_state, int32_t* out_interactor, vec3* out_interaction_at_local);
-void            interactor_volume_2h     (ui_hash_t id, interactor_event_ event_mask, bounds_t bounds, button_state_ *out_focus_state, int32_t *out_interactor);
+void            interactor_volume_1h     (id_hash_t id, interactor_event_ event_mask, vec3 box_unfocused_start, vec3 box_unfocused_size, vec3 box_focused_start, vec3 box_focused_size, button_state_* out_focus_state, int32_t* out_interactor, vec3* out_interaction_at_local);
+void            interactor_volume_2h     (id_hash_t id, interactor_event_ event_mask, bounds_t bounds, ui_2h_state_* out_focus_state, int32_t* out_interactor1, int32_t* out_interactor2);
 
-bool32_t        interactor_is_preoccupied(interactor_id_t interactor, ui_hash_t for_el_id, bool32_t include_focused);
-button_state_   interactor_set_focus     (interactor_id_t interactor, ui_hash_t for_el_id, bool32_t focused, float priority);
-button_state_   interactor_set_active    (interactor_id_t interactor, ui_hash_t for_el_id, bool32_t active, vec3 at);
-interactor_id_t interactor_last_active   (ui_hash_t for_el_id);
-interactor_id_t interactor_last_focused  (ui_hash_t for_el_id);
+bool32_t        interactor_is_preoccupied(interactor_id_t interactor, id_hash_t for_el_id, bool32_t include_focused);
+button_state_   interactor_set_focus     (interactor_id_t interactor, id_hash_t for_el_id, bool32_t focused, float priority);
+button_state_   interactor_set_active    (interactor_id_t interactor, id_hash_t for_el_id, bool32_t active, vec3 at);
+interactor_id_t interactor_last_active   (id_hash_t for_el_id);
+interactor_id_t interactor_last_focused  (id_hash_t for_el_id);
 
 extern array_t<interactor_t> skui_interactors;
 

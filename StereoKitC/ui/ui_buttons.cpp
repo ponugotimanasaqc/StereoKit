@@ -10,7 +10,7 @@ namespace sk {
 // Button core behavior!                 //
 ///////////////////////////////////////////
 
-void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float &finger_offset, button_state_ &button_state, button_state_ &focus_state) {
+void ui_button_behavior(vec3 window_relative_pos, vec2 size, id_hash_t id, float &finger_offset, button_state_ &button_state, button_state_ &focus_state) {
 	button_state = button_state_inactive;
 	focus_state  = button_state_inactive;
 	int32_t interactor = -1;
@@ -65,7 +65,7 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 
 template<typename C>
 bool32_t ui_button_img_at_g(const C* text, sprite_t image, ui_btn_layout_ image_layout, vec3 window_relative_pos, vec2 size) {
-	ui_hash_t     id = ui_stack_hash(text);
+	id_hash_t     id = ui_stack_hash(text);
 	float         finger_offset;
 	button_state_ state, focus;
 	ui_button_behavior(window_relative_pos, size, id, finger_offset, state, focus);
@@ -180,7 +180,7 @@ bool32_t ui_button_img_16(const char16_t *text, sprite_t image, ui_btn_layout_ i
 
 template<typename C>
 bool32_t ui_button_at_g(const C *text, vec3 window_relative_pos, vec2 size) {
-	ui_hash_t     id = ui_stack_hash(text);
+	id_hash_t     id = ui_stack_hash(text);
 	float         finger_offset;
 	button_state_ state, focus;
 	ui_button_behavior(window_relative_pos, size, id, finger_offset, state, focus);
@@ -235,7 +235,7 @@ bool32_t ui_button_16(const char16_t *text) { return ui_button_g<char16_t, text_
 
 template<typename C>
 bool32_t ui_toggle_at_g(const C *text, bool32_t &pressed, vec3 window_relative_pos, vec2 size) {
-	ui_hash_t     id = ui_stack_hash(text);
+	id_hash_t     id = ui_stack_hash(text);
 	float         finger_offset;
 	button_state_ state, focus;
 	ui_button_behavior(window_relative_pos, size, id, finger_offset, state, focus);
@@ -294,7 +294,7 @@ bool32_t ui_toggle_16(const char16_t *text, bool32_t &pressed) { return ui_toggl
 
 template<typename C>
 bool32_t ui_button_round_at_g(const C *text, sprite_t image, vec3 window_relative_pos, float diameter) {
-	ui_hash_t     id = ui_stack_hash(text);
+	id_hash_t     id = ui_stack_hash(text);
 	float         finger_offset;
 	button_state_ state, focus;
 	ui_button_behavior(window_relative_pos, { diameter,diameter }, id, finger_offset, state, focus);

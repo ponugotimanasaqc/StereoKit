@@ -9,7 +9,7 @@ array_t<interactor_t> skui_interactors = { };
 
 ///////////////////////////////////////////
 
-inline bounds_t ui_size_box(vec3 top_left, vec3 dimensions) {
+inline bounds_t size_box(vec3 top_left, vec3 dimensions) {
 	return { top_left - dimensions / 2, dimensions };
 }
 
@@ -65,7 +65,7 @@ bool32_t interactor_check_box(const interactor_t *actor, bounds_t box, vec3 *out
 
 ///////////////////////////////////////////
 
-void interactor_volume_1h(ui_hash_t id, interactor_event_ event_mask, vec3 box_unfocused_start, vec3 box_unfocused_size, vec3 box_focused_start, vec3 box_focused_size, button_state_ *out_focus_state, int32_t *out_interactor, vec3 *out_interaction_at_local) {
+void interactor_volume_1h(id_hash_t id, interactor_event_ event_mask, vec3 box_unfocused_start, vec3 box_unfocused_size, vec3 box_focused_start, vec3 box_focused_size, button_state_ *out_focus_state, int32_t *out_interactor, vec3 *out_interaction_at_local) {
 	*out_interactor           = -1;
 	*out_focus_state          = button_state_inactive;
 	*out_interaction_at_local = vec3_zero;
@@ -84,8 +84,8 @@ void interactor_volume_1h(ui_hash_t id, interactor_event_ event_mask, vec3 box_u
 			continue;
 
 		bounds_t bounds = actor->focused_prev == id
-			? ui_size_box(box_focused_start,   box_focused_size)
-			: ui_size_box(box_unfocused_start, box_unfocused_size);
+			? size_box(box_focused_start,   box_focused_size)
+			: size_box(box_unfocused_start, box_unfocused_size);
 
 		float         priority = 0;
 		vec3          interact_at;
@@ -104,7 +104,7 @@ void interactor_volume_1h(ui_hash_t id, interactor_event_ event_mask, vec3 box_u
 
 ///////////////////////////////////////////
 
-void ui_interaction_2h(ui_hash_t id, interactor_event_ event_mask, bounds_t bounds, ui_2h_state_* out_focus_state, int32_t* out_interactor1, int32_t* out_interactor2) {
+void interactor_volume_2h(id_hash_t id, interactor_event_ event_mask, bounds_t bounds, ui_2h_state_* out_focus_state, int32_t* out_interactor1, int32_t* out_interactor2) {
 	*out_focus_state = ui_2h_state_none;
 	*out_interactor1 = -1;
 	*out_interactor2 = -1;
@@ -258,7 +258,7 @@ void ui_interaction_2h(ui_hash_t id, interactor_event_ event_mask, bounds_t boun
 
 ///////////////////////////////////////////
 
-bool32_t interactor_is_preoccupied(interactor_id_t interactor, ui_hash_t for_el_id, bool32_t include_focused) {
+bool32_t interactor_is_preoccupied(interactor_id_t interactor, id_hash_t for_el_id, bool32_t include_focused) {
 	const interactor_t *actor = &skui_interactors[interactor];
 	return (include_focused &&  actor->focused_prev != 0 && actor->focused_prev != for_el_id)
 	                        || (actor->active_prev  != 0 && actor->active_prev  != for_el_id);
@@ -266,7 +266,7 @@ bool32_t interactor_is_preoccupied(interactor_id_t interactor, ui_hash_t for_el_
 
 ///////////////////////////////////////////
 
-button_state_ interactor_set_focus(interactor_id_t interactor, ui_hash_t for_el_id, bool32_t focused, float priority) {
+button_state_ interactor_set_focus(interactor_id_t interactor, id_hash_t for_el_id, bool32_t focused, float priority) {
 	if (interactor == -1) return button_state_inactive;
 
 	interactor_t *actor = &skui_interactors[interactor];
@@ -292,7 +292,7 @@ button_state_ interactor_set_focus(interactor_id_t interactor, ui_hash_t for_el_
 
 ///////////////////////////////////////////
 
-button_state_ interactor_set_active(interactor_id_t interactor, ui_hash_t for_el_id, bool32_t active, vec3 at) {
+button_state_ interactor_set_active(interactor_id_t interactor, id_hash_t for_el_id, bool32_t active, vec3 at) {
 	if (interactor == -1) return button_state_inactive;
 
 	interactor_t *actor = &skui_interactors[interactor];
@@ -321,13 +321,13 @@ button_state_ interactor_set_active(interactor_id_t interactor, ui_hash_t for_el
 
 ///////////////////////////////////////////
 
-interactor_id_t interactor_last_active(ui_hash_t for_el_id) {
+interactor_id_t interactor_last_active(id_hash_t for_el_id) {
 	return skui_interactors.index_where(&interactor_t::active_prev, for_el_id);
 }
 
 ///////////////////////////////////////////
 
-interactor_id_t interactor_last_focused(ui_hash_t for_el_id){
+interactor_id_t interactor_last_focused(id_hash_t for_el_id){
 	return skui_interactors.index_where(&interactor_t::focused_prev, for_el_id);
 }
 

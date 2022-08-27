@@ -7,7 +7,7 @@
 
 namespace sk {
 
-ui_hash_t skui_input_target = 0;
+id_hash_t skui_input_target = 0;
 int32_t   skui_input_carat = 0;
 int32_t   skui_input_carat_end = 0;
 float     skui_input_blink = 0;
@@ -28,7 +28,7 @@ bool32_t ui_input_g(const C *id, C *buffer, int32_t buffer_size, vec2 size, text
 	vec2 final_size;
 	ui_layout_reserve_sz(size, false, &final_pos, &final_size);
 
-	ui_hash_t id_hash  = ui_stack_hash(id);
+	id_hash_t id_hash  = ui_stack_hash(id);
 	bool      result   = false;
 	vec3      box_size = vec3{ final_size.x, final_size.y, skui_settings.depth };
 

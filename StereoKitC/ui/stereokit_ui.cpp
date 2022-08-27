@@ -52,24 +52,24 @@ struct ui_hand_t {
 	bool     ray_enabled;
 	bool     ray_discard;
 	float    ray_visibility;
-	ui_hash_t focused_prev;
-	ui_hash_t focused;
+	id_hash_t focused_prev;
+	id_hash_t focused;
 	float    focus_priority;
-	ui_hash_t active_prev;
-	ui_hash_t active;
+	id_hash_t active_prev;
+	id_hash_t active;
 	button_state_ pinch_state;
 };
 
 array_t<ui_window_t> skui_sl_windows = {};
-array_t<ui_hash_t>   skui_id_stack   = {};
+array_t<id_hash_t>   skui_id_stack   = {};
 array_t<layer_t>     skui_layers     = {};
 array_t<text_style_t>skui_font_stack = {};
 array_t<color128>    skui_tint_stack = {};
 array_t<bool32_t>    skui_enabled_stack = {};
 array_t<bool>        skui_preserve_keyboard_stack = {};
-array_t<ui_hash_t>    skui_preserve_keyboard_ids[2] = {};
-array_t<ui_hash_t>   *skui_preserve_keyboard_ids_read;
-array_t<ui_hash_t>   *skui_preserve_keyboard_ids_write;
+array_t<id_hash_t>    skui_preserve_keyboard_ids[2] = {};
+array_t<id_hash_t>   *skui_preserve_keyboard_ids_read;
+array_t<id_hash_t>   *skui_preserve_keyboard_ids_write;
 
 ui_el_visual_t  skui_visuals[ui_vis_max] = {};
 mesh_t          skui_win_top      = nullptr;
@@ -91,7 +91,7 @@ bool32_t        skui_show_volumes = false;
 bool32_t        skui_enable_far_interact = true;
 color128        skui_tint = {1,1,1,1};
 bool32_t        skui_interact_enabled = true;
-ui_hash_t       skui_last_element = 0xFFFFFFFFFFFFFFFF;
+id_hash_t       skui_last_element = 0xFFFFFFFFFFFFFFFF;
 pointer_t       skui_pointers[4];
 int32_t         skui_pointer_count = 0;
 
@@ -113,7 +113,7 @@ vec3  skui_prev_offset;
 float skui_prev_line_height;
 bounds_t skui_recent_layout;
 
-ui_hash_t skui_anim_id;
+id_hash_t skui_anim_id;
 float     skui_anim_time;
 
 color128 skui_color_border = { 1,1,1,1 };
@@ -361,14 +361,14 @@ void ui_quadrant_mesh_half(mesh_t *mesh, float padding, int32_t quadrant_slices,
 
 ///////////////////////////////////////////
 
-void ui_anim_start(ui_hash_t id) {
+void ui_anim_start(id_hash_t id) {
 	skui_anim_id   = id;
 	skui_anim_time = time_getf_unscaled();
 }
 
 ///////////////////////////////////////////
 
-bool ui_anim_has(ui_hash_t id, float duration) {
+bool ui_anim_has(id_hash_t id, float duration) {
 	if (id == skui_anim_id) {
 		if ((time_getf_unscaled() - skui_anim_time) < duration)
 			return true;
@@ -379,7 +379,7 @@ bool ui_anim_has(ui_hash_t id, float duration) {
 
 ///////////////////////////////////////////
 
-float ui_anim_elapsed(ui_hash_t id, float duration, float max) {
+float ui_anim_elapsed(id_hash_t id, float duration, float max) {
 	return skui_anim_id == id ? fminf(max, (time_getf_unscaled() - skui_anim_time) / duration) : 0;
 }
 
@@ -788,7 +788,7 @@ void ui_update() {
 
 	// Clear current keyboard ignore elements
 	skui_preserve_keyboard_ids_read->clear();
-	array_t<ui_hash_t> *tmp = skui_preserve_keyboard_ids_read;
+	array_t<id_hash_t> *tmp = skui_preserve_keyboard_ids_read;
 	skui_preserve_keyboard_ids_read  = skui_preserve_keyboard_ids_write;
 	skui_preserve_keyboard_ids_write = tmp;
 }
@@ -857,8 +857,8 @@ void ui_shutdown() {
 
 ///////////////////////////////////////////
 
-ui_hash_t hash_fnv64_string_16(const char16_t* string, ui_hash_t start_hash = HASH_FNV64_START) {
-	ui_hash_t hash = start_hash;
+id_hash_t hash_fnv64_string_16(const char16_t* string, id_hash_t start_hash = HASH_FNV64_START) {
+	id_hash_t hash = start_hash;
 	while (*string != '\0') {
 		hash = (hash ^ ((*string & 0xFF00) >> 2)) * 1099511628211;
 		hash = (hash ^ ( *string & 0x00FF      )) * 1099511628211;
@@ -869,7 +869,7 @@ ui_hash_t hash_fnv64_string_16(const char16_t* string, ui_hash_t start_hash = HA
 
 ///////////////////////////////////////////
 
-ui_hash_t ui_stack_hash(const char *string) {
+id_hash_t ui_stack_hash(const char *string) {
 	return skui_id_stack.count > 0 
 		? hash_fnv64_string(string, skui_id_stack.last())
 		: hash_fnv64_string(string);
@@ -877,16 +877,16 @@ ui_hash_t ui_stack_hash(const char *string) {
 
 ///////////////////////////////////////////
 
-ui_hash_t ui_stack_hash_16(const char16_t *string) {
+id_hash_t ui_stack_hash_16(const char16_t *string) {
 	return skui_id_stack.count > 0 
 		? hash_fnv64_string_16(string, skui_id_stack.last())
 		: hash_fnv64_string_16(string);
 }
-ui_hash_t ui_stack_hash(const char16_t *string) { return ui_stack_hash_16(string); }
+id_hash_t ui_stack_hash(const char16_t *string) { return ui_stack_hash_16(string); }
 
 ///////////////////////////////////////////
 
-ui_hash_t ui_stack_hashi(int32_t id) {
+id_hash_t ui_stack_hashi(int32_t id) {
 	return skui_id_stack.count > 0 
 		? hash_fnv64_data(&id, sizeof(int32_t), skui_id_stack.last())
 		: hash_fnv64_data(&id, sizeof(int32_t));
@@ -894,25 +894,25 @@ ui_hash_t ui_stack_hashi(int32_t id) {
 
 ///////////////////////////////////////////
 
-ui_hash_t ui_push_id(const char *id) {
-	ui_hash_t result = ui_stack_hash(id);
+id_hash_t ui_push_id(const char *id) {
+	id_hash_t result = ui_stack_hash(id);
 	skui_id_stack.add({ result });
 	return result;
 }
 
 ///////////////////////////////////////////
 
-ui_hash_t ui_push_id_16(const char16_t *id) {
-	ui_hash_t result = ui_stack_hash(id);
+id_hash_t ui_push_id_16(const char16_t *id) {
+	id_hash_t result = ui_stack_hash(id);
 	skui_id_stack.add({ result });
 	return result;
 }
-inline ui_hash_t ui_push_id(const char16_t *id) { return ui_push_id_16(id); }
+inline id_hash_t ui_push_id(const char16_t *id) { return ui_push_id_16(id); }
 
 ///////////////////////////////////////////
 
-ui_hash_t ui_push_idi(int32_t id) {
-	ui_hash_t result = ui_stack_hashi(id);
+id_hash_t ui_push_idi(int32_t id) {
+	id_hash_t result = ui_stack_hashi(id);
 	skui_id_stack.add({ result });
 	return result;
 }
@@ -1182,7 +1182,7 @@ void ui_model_at(model_t model, vec3 start, vec3 size, color128 color) {
 
 template<typename C>
 button_state_ ui_volumei_at_g(const C *id, bounds_t bounds, ui_confirm_ interact_type, handed_ *out_opt_hand, button_state_ *out_opt_focus_state) {
-	ui_hash_t     id_hash = ui_stack_hash(id);
+	id_hash_t     id_hash = ui_stack_hash(id);
 	button_state_ result  = button_state_inactive;
 	button_state_ focus   = button_state_inactive;
 	int32_t       interactor = -1;
@@ -1218,7 +1218,7 @@ button_state_ ui_volumei_at_16(const char16_t *id, bounds_t bounds, ui_confirm_ 
 
 template<typename C>
 bool32_t ui_volume_at_g(const C *id, bounds_t bounds) {
-	ui_hash_t id_hash = ui_stack_hash(id);
+	id_hash_t id_hash = ui_stack_hash(id);
 	bool      result  = false;
 
 	skui_last_element = id_hash;
@@ -1434,7 +1434,7 @@ void ui_progress_bar(float percent, float width) {
 
 template<typename C, typename N>
 bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 window_relative_pos, vec2 size, ui_confirm_ confirm_method) {
-	ui_hash_t id     = ui_stack_hash(id_text);
+	id_hash_t id     = ui_stack_hash(id_text);
 	bool      result = false;
 
 	const float snap_scale = 1;
@@ -1613,7 +1613,7 @@ bool32_t ui_hslider_f64_16(const char16_t *name, double &value, double min, doub
 
 ///////////////////////////////////////////
 
-bool32_t _ui_handle_begin(ui_hash_t id, pose_t &movement, bounds_t handle, bool32_t draw, ui_move_ move_type) {
+bool32_t _ui_handle_begin(id_hash_t id, pose_t &movement, bounds_t handle, bool32_t draw, ui_move_ move_type) {
 	bool  result = false;
 	float color  = 1;
 
@@ -1895,7 +1895,7 @@ void ui_handle_end() {
 
 template<typename C, vec2 (*text_size_t)(const C *text, text_style_t style)>
 void ui_window_begin_g(const C *text, pose_t &pose, vec2 window_size, ui_win_ window_type, ui_move_ move_type) {
-	ui_hash_t id    = ui_push_id(text);
+	id_hash_t id    = ui_push_id(text);
 	int32_t   index = skui_sl_windows.binary_search(&ui_window_t::hash, id);
 	if (index < 0) {
 		index = ~index;
