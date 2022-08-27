@@ -1,4 +1,4 @@
-#include "ui_interaction.h"
+#include "interaction.h"
 #include "../sk_math.h"
 
 #include <float.h>

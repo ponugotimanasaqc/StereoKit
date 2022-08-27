@@ -3,7 +3,7 @@
 #include "../_stereokit_ui.h"
 #include "../sk_math.h"
 #include "../libraries/unicode.h"
-#include "ui_interaction.h"
+#include "../systems/interaction.h"
 
 namespace sk {
 

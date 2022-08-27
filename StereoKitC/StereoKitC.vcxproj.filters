@@ -148,9 +148,6 @@
     <ClCompile Include="ui\ui_theme.cpp">
       <Filter>ui</Filter>
     </ClCompile>
-    <ClCompile Include="ui\ui_interaction.cpp">
-      <Filter>ui</Filter>
-    </ClCompile>
     <ClCompile Include="systems\bbox.cpp">
       <Filter>systems</Filter>
     </ClCompile>
@@ -213,6 +210,9 @@
     </ClCompile>
     <ClCompile Include="libraries\unicode.cpp">
       <Filter>libraries</Filter>
+    </ClCompile>
+    <ClCompile Include="systems\interaction.cpp">
+      <Filter>systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -403,9 +403,6 @@
     <ClInclude Include="_stereokit_ui.h">
       <Filter>ui</Filter>
     </ClInclude>
-    <ClInclude Include="ui\ui_interaction.h">
-      <Filter>ui</Filter>
-    </ClInclude>
     <ClInclude Include="ui\ui_theme.h">
       <Filter>ui</Filter>
     </ClInclude>
@@ -480,6 +477,9 @@
     </ClInclude>
     <ClInclude Include="xr_backends\openxr_view.h">
       <Filter>xr_backends</Filter>
+    </ClInclude>
+    <ClInclude Include="systems\interaction.h">
+      <Filter>systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
