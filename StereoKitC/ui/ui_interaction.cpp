@@ -9,6 +9,21 @@ array_t<ui_interactor_t> skui_interactors = { };
 
 ///////////////////////////////////////////
 
+void ui_interactors_update_local(matrix to_local) {
+	for (int32_t i = 0; i < skui_interactors.count; i++) {
+		ui_interactor_t* actor = &skui_interactors[i];
+		
+		actor->hit_test_local      = matrix_transform_pose(to_local, actor->hit_test_world);
+		actor->hit_test_local_prev = matrix_transform_pose(to_local, actor->hit_test_world_prev);
+		actor->motion_pose_local   = matrix_transform_pose(to_local, actor->motion_pose_world);
+		if (actor->type == ui_interactor_type_ray) {
+			actor->hit_test_local_dir = actor->hit_test_local.orientation * vec3_forward;
+		}
+	}
+}
+
+///////////////////////////////////////////
+
 bool32_t ui_in_box(vec3 pt, vec3 pt_prev, float radius, bounds_t box) {
 	if (skui_show_volumes)
 		render_add_mesh(skui_box_dbg, skui_mat_dbg, matrix_trs(box.center, quat_identity, box.dimensions));
@@ -34,19 +49,20 @@ bool32_t ui_interact_box(const ui_interactor_t *actor, bounds_t box, vec3 *out_a
 
 	switch (actor->type) {
 	case ui_interactor_type_point: {
-		bool32_t result = ui_in_box(actor->hit_test_local.at, actor->hit_test_local.at_prev, actor->radius, box);
+		bool32_t result = ui_in_box(actor->hit_test_local.position, actor->hit_test_local_prev.position, actor->radius, box);
 		if (result) {
-			*out_at       = actor->hit_test_local.at;
+			*out_at       = actor->hit_test_local.position;
 			*out_priority = bounds_sdf_manhattan(box, *out_at);
 		}
 		return result;
 	} break;
 	case ui_interactor_type_ray: {
+		ray_t    ray    = { actor->hit_test_local.position, actor->hit_test_local_dir };
 		float    dist   = 0;
-		bool32_t result = ui_intersect_box(actor->hit_test_local.ray, box, &dist);
+		bool32_t result = ui_intersect_box(ray, box, &dist);
 		if (result) {
-			*out_at       = actor->hit_test_local.ray.pos + dist * actor->hit_test_local.ray.dir;
-			*out_priority = bounds_sdf_manhattan(box, *out_at) + vec3_distance_sq(actor->hit_test_local.ray.pos, *out_at);
+			*out_at       = ray.pos + dist * ray.dir;
+			*out_priority = bounds_sdf_manhattan(box, *out_at) + vec3_distance_sq(ray.pos, *out_at);
 		}
 		return result;
 	} break;

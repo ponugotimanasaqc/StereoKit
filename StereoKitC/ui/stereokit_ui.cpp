@@ -672,6 +672,9 @@ void ui_update() {
 	for (int32_t i = 0; i < skui_interactors.count; i++) {
 		ui_interactor_t* actor = &skui_interactors[i];
 
+		actor->hit_test_world_prev = actor->hit_test_world;
+		actor->hit_test_local_prev = actor->hit_test_world;
+		
 		actor->focused_prev = actor->focused;
 		actor->active_prev  = actor->active;
 
@@ -680,26 +683,16 @@ void ui_update() {
 		actor->active  = 0;
 	}
 
-	for (int32_t i = 0; i < handed_max; i++) {
 	// Hand poke
+	for (int32_t i = 0; i < handed_max; i++) {
 		const hand_t    *hand    = input_hand((handed_)i);
 		const pointer_t *pointer = input_get_pointer(input_hand_pointer_id[i]);
 		ui_interactor_t *actor   = &skui_interactors[i];
 
-		actor->hit_test_world.at_prev = actor->hit_test_world.at;
-		actor->hit_test_world.at      = hand->fingers[1][4].position;
-		actor->hit_test_local.at_prev = actor->hit_test_world.at_prev;
-		actor->hit_test_local.at      = actor->hit_test_world.at;
-		actor->motion_pose_world        = hand->palm;
+		actor->hit_test_world    = { hand->fingers[1][4].position, hand->fingers[1][4].orientation };
+		actor->motion_pose_world = hand->palm;
 		actor->radius            = hand->fingers[1][4].radius;
 		actor->tracked           = hand->tracked_state;
-
-		// Don't let the hand trigger things while popping in and out of
-		// tracking
-		if (hand->tracked_state & button_state_just_active) {
-			actor->hit_test_world.at_prev = actor->hit_test_world.at;
-			actor->hit_test_local.at_prev = actor->hit_test_world.at;
-		}
 	}
 
 	// Hand pinch
@@ -708,23 +701,13 @@ void ui_update() {
 		const pointer_t *pointer = input_get_pointer(input_hand_pointer_id[i]);
 		ui_interactor_t *actor   = &skui_interactors[i+2];
 
-		actor->hit_test_world.at_prev = actor->hit_test_world.at;
-		actor->hit_test_world.at      = hand->pinch_pt;
-		actor->hit_test_local.at_prev = actor->hit_test_world.at_prev;
-		actor->hit_test_local.at      = hand->pinch_pt;
-		actor->motion_pose_world      = hand->palm;
+		actor->hit_test_world    = { hand->pinch_pt, hand->palm.orientation };
+		actor->motion_pose_world = hand->palm;
 		actor->radius            = hand->fingers[1][4].radius;
 		
 		actor->tracked           = hand->tracked_state;
 		actor->activation        = hand->pinch_activation;
 		actor->state             = hand->pinch_state;
-
-		// Don't let the hand trigger things while popping in and out of
-		// tracking
-		if (hand->tracked_state & button_state_just_active) {
-			actor->hit_test_world.at_prev = actor->hit_test_world.at;
-			actor->hit_test_local.at_prev = actor->hit_test_world.at;
-		}
 	}
 	
 	// Hand ray
@@ -733,10 +716,8 @@ void ui_update() {
 		const pointer_t *pointer = input_get_pointer(input_hand_pointer_id[i]);
 		ui_interactor_t *actor   = &skui_interactors[i+4];
 
-		actor->hit_test_world.ray = pointer->ray;
-		actor->hit_test_local.ray = pointer->ray;
-		actor->motion_pose_world  = { pointer->ray.pos, pointer->orientation };
-		actor->motion_pose_local  = { pointer->ray.pos, pointer->orientation };
+		actor->hit_test_world     = { pointer->ray.pos, pointer->orientation };
+		actor->motion_pose_world  = actor->hit_test_world;
 		
 		actor->tracked            = hand->tracked_state;//pointer->tracked;
 		actor->activation         = hand->pinch_activation;  pointer->state& button_state_active ? 1 : 0;
@@ -749,24 +730,37 @@ void ui_update() {
 	bool32_t mouse_tracked = ray_from_mouse(input_mouse()->pos, mouse_ray);
 	if (mouse_tracked) {
 		actor->hit_test_world.ray = mouse_ray;
-		actor->hit_test_local.ray = mouse_ray;
 	} else {
 	}
 	pose_t mouse_pose = { mouse_ray.pos, quat_lookat(mouse_ray.pos, mouse_ray.pos + mouse_ray.dir) };
 	actor->motion_pose_world = mouse_pose;
-	actor->motion_pose_local = mouse_pose;
 
 	actor->tracked    = button_make_state(actor->tracked & button_state_active, mouse_tracked);
 	actor->state      = input_key(key_mouse_left);
 	actor->activation = actor->state & button_state_active ? 1 : 0;*/
 
+
+	// Take care of some post-update attributes
 	for (int32_t i = 0; i < skui_interactors.count; i++) {
 		ui_interactor_t* actor = &skui_interactors[i];
+
+		// Don't let the hand trigger things while popping in and out of
+		// tracking
+		if (actor->tracked & button_state_just_active) {
+			actor->hit_test_world_prev = actor->hit_test_world;
+			actor->hit_test_local_prev = actor->hit_test_world;
+		}
+
+		actor->hit_test_local_dir = actor->hit_test_world_dir = actor->hit_test_world.orientation * vec3_forward;
+		actor->hit_test_local     = actor->hit_test_world;
+		actor->motion_pose_local  = actor->motion_pose_world;
+		
+		// Draw any rays
 		if (!actor->show_ray) continue;
 
 		actor->ray_visibility = math_lerp(actor->ray_visibility, actor->focused_prev != 0 ? 1 : 0, 20.0f * time_elapsedf_unscaled());
 		if (actor->ray_visibility > 0.004f) {
-			ray_t       r     = actor->hit_test_world.ray;
+			ray_t       r     = {actor->hit_test_local.position, actor->hit_test_world_dir};
 			const float scale = 2;
 			
 			if (actor->active_prev != 0) {
@@ -952,17 +946,11 @@ void ui_push_surface(pose_t surface_pose, vec3 layout_start, vec2 layout_dimensi
 		layout_dimensions, 0, 0
 	});
 
-	layer_t      &layer    = skui_layers.last();
-	const matrix *to_local = hierarchy_to_local();
-	for (int32_t i = 0; i < skui_interactors.count; i++) {
-		if (skui_interactors[i].type == ui_interactor_type_point) {
-			skui_interactors[i].hit_test_local.at      = matrix_transform_pt (*to_local, skui_interactors[i].hit_test_world.at);
-			skui_interactors[i].hit_test_local.at_prev = matrix_transform_pt (*to_local, skui_interactors[i].hit_test_world.at_prev);
-		} else if (skui_interactors[i].type == ui_interactor_type_ray) {
-			skui_interactors[i].hit_test_local.ray     = matrix_transform_ray(*to_local, skui_interactors[i].hit_test_world.ray);
-		}
-	}
 
+	const matrix* to_local = hierarchy_to_local();
+	ui_interactors_update_local(*to_local);
+
+	layer_t &layer = skui_layers.last();
 	for (int32_t p = 0; p < skui_pointer_count; p++) {
 		const ray_t prev_ray = skui_layers.count == 1 
 			? skui_pointers[p].ray 
@@ -977,21 +965,8 @@ void ui_pop_surface() {
 	hierarchy_pop();
 	skui_layers.pop();
 
-	const matrix *to_local = hierarchy_to_local();
-	if (skui_layers.count <= 0) {
-		for (int32_t i = 0; i < skui_interactors.count; i++) {
-			skui_interactors[i].hit_test_local = skui_interactors[i].hit_test_world;
-		}
-	} else {
-		for (int32_t i = 0; i < skui_interactors.count; i++) {
-			if (skui_interactors[i].type == ui_interactor_type_point) {
-				skui_interactors[i].hit_test_local.at      = matrix_transform_pt(*to_local, skui_interactors[i].hit_test_world.at);
-				skui_interactors[i].hit_test_local.at_prev = matrix_transform_pt(*to_local, skui_interactors[i].hit_test_world.at_prev);
-			} else if (skui_interactors[i].type == ui_interactor_type_ray) {
-				skui_interactors[i].hit_test_local.ray     = matrix_transform_ray(*to_local, skui_interactors[i].hit_test_world.ray);
-			}
-		}
-	}
+	const matrix* to_local = hierarchy_to_local();
+	ui_interactors_update_local(*to_local);
 }
 
 ///////////////////////////////////////////
@@ -1606,9 +1581,9 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 	
 	if (actor >= 0) {
 		if (button_state & button_state_just_active)
-			sound_play(skui_snd_interact, skui_interactors[actor].hit_test_world.at, 1);
+			sound_play(skui_snd_interact, skui_interactors[actor].hit_at_world, 1);
 		else if (button_state & button_state_just_inactive)
-			sound_play(skui_snd_uninteract, skui_interactors[actor].hit_test_world.at, 1);
+			sound_play(skui_snd_uninteract, skui_interactors[actor].hit_at_world, 1);
 	}
 
 	return result;
