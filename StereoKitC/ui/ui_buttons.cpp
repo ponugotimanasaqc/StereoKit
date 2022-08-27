@@ -55,8 +55,8 @@ void ui_button_behavior(vec3 window_relative_pos, vec2 size, ui_hash_t id, float
 		button_state = ui_interactor_set_active(interactor, id, false, interaction_at);
 	}
 	
-	if      (button_state & button_state_just_active)   sound_play(skui_snd_interact,   skui_interactors[interactor].hit_at_world, 1);
-	else if (button_state & button_state_just_inactive) sound_play(skui_snd_uninteract, skui_interactors[interactor].hit_at_world, 1);
+	if      (button_state & button_state_just_active)   sound_play(skui_snd_interact,   skui_interactors[interactor]._hit_at_world, 1);
+	else if (button_state & button_state_just_inactive) sound_play(skui_snd_uninteract, skui_interactors[interactor]._hit_at_world, 1);
 }
 
 ///////////////////////////////////////////

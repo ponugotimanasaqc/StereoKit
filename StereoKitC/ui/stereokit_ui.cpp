@@ -628,23 +628,23 @@ bool ui_init() {
 	ui_interactor_t hand = {};
 	
 	// Hand poke
-	hand.type = ui_interactor_type_point;
-	hand.events = ui_interactor_event_poke;
+	hand.type          = ui_interactor_type_point;
+	hand.events        = ui_interactor_event_poke;
 	hand.pos_smoothing = .6f;
 	hand.rot_smoothing = .4f;
 	skui_interactors.add(hand);
 	skui_interactors.add(hand);
 	// Hand pinch
-	hand.type   = ui_interactor_type_point;
-	hand.events = ui_interactor_event_pinch;
+	hand.type          = ui_interactor_type_point;
+	hand.events        = ui_interactor_event_pinch;
 	hand.pos_smoothing = .6f;
 	hand.rot_smoothing = .4f;
 	skui_interactors.add(hand);
 	skui_interactors.add(hand);
 
 	// Hand ray
-	hand.type = ui_interactor_type_ray;
-	hand.events = (ui_interactor_event_)(ui_interactor_event_poke | ui_interactor_event_pinch);
+	hand.type          = ui_interactor_type_ray;
+	hand.events        = (ui_interactor_event_)(ui_interactor_event_poke | ui_interactor_event_pinch);
 	hand.pos_smoothing = .6f;
 	hand.rot_smoothing = .4f;
 	hand.radius        = 0;
@@ -672,8 +672,8 @@ void ui_update() {
 	for (int32_t i = 0; i < skui_interactors.count; i++) {
 		ui_interactor_t* actor = &skui_interactors[i];
 
-		actor->hit_test_world_prev = actor->hit_test_world;
-		actor->hit_test_local_prev = actor->hit_test_world;
+		actor->_hit_test_world_prev = actor->hit_test_world;
+		actor->_hit_test_local_prev = actor->hit_test_world;
 		
 		actor->focused_prev = actor->focused;
 		actor->active_prev  = actor->active;
@@ -747,37 +747,37 @@ void ui_update() {
 		// Don't let the hand trigger things while popping in and out of
 		// tracking
 		if (actor->tracked & button_state_just_active) {
-			actor->hit_test_world_prev = actor->hit_test_world;
-			actor->hit_test_local_prev = actor->hit_test_world;
+			actor->_hit_test_world_prev = actor->hit_test_world;
+			actor->_hit_test_local_prev = actor->hit_test_world;
 		}
 
-		actor->hit_test_local_dir = actor->hit_test_world_dir = actor->hit_test_world.orientation * vec3_forward;
-		actor->hit_test_local     = actor->hit_test_world;
-		actor->motion_pose_local  = actor->motion_pose_world;
+		actor->_hit_test_local_dir = actor->_hit_test_world_dir = actor->hit_test_world.orientation * vec3_forward;
+		actor->_hit_test_local     = actor->hit_test_world;
+		actor->_motion_pose_local  = actor->motion_pose_world;
 		
 		// Draw any rays
 		if (!actor->show_ray) continue;
 
-		actor->ray_visibility = math_lerp(actor->ray_visibility, actor->focused_prev != 0 ? 1 : 0, 20.0f * time_elapsedf_unscaled());
-		if (actor->ray_visibility > 0.004f) {
-			ray_t       r     = {actor->hit_test_local.position, actor->hit_test_world_dir};
+		actor->_ray_visibility = math_lerp(actor->_ray_visibility, actor->focused_prev != 0 ? 1 : 0, 20.0f * time_elapsedf_unscaled());
+		if (actor->_ray_visibility > 0.004f) {
+			ray_t       r     = {actor->_hit_test_local.position, actor->_hit_test_world_dir};
 			const float scale = 2;
 			
 			if (actor->active_prev != 0) {
-				vec3 dir = matrix_transform_pt(pose_matrix(actor->motion_pose_world), actor->hit_at_action_local);
+				vec3 dir = matrix_transform_pt(pose_matrix(actor->motion_pose_world), actor->_hit_at_action_local);
 				line_point_t points[5] = {
 					line_point_t{r.pos + dir * (0.07f), 0.001f,  color32{255,255,255,0}},
-					line_point_t{r.pos + dir * (0.07f + 0.09f), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 60)}},
-					line_point_t{r.pos + dir * (0.07f + 0.18f), 0.0020f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 80)}},
-					line_point_t{r.pos + dir * (0.07f + 0.63f), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 25)}},
+					line_point_t{r.pos + dir * (0.07f + 0.09f), 0.0015f, color32{255,255,255,(uint8_t)(actor->_ray_visibility * 60)}},
+					line_point_t{r.pos + dir * (0.07f + 0.18f), 0.0020f, color32{255,255,255,(uint8_t)(actor->_ray_visibility * 80)}},
+					line_point_t{r.pos + dir * (0.07f + 0.63f), 0.0015f, color32{255,255,255,(uint8_t)(actor->_ray_visibility * 25)}},
 					line_point_t{r.pos + dir,                   0.001f,  color32{255,255,255,0}} };
 				line_add_listv(points, 5);
 			} else {
 				line_point_t points[5] = {
 					line_point_t{r.pos+r.dir*(0.07f              ), 0.001f,  color32{255,255,255,0}},
-					line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 60 )}},
-					line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 80 )}},
-					line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->ray_visibility * 25 )}},
+					line_point_t{r.pos+r.dir*(0.07f + 0.01f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->_ray_visibility * 60 )}},
+					line_point_t{r.pos+r.dir*(0.07f + 0.02f*scale), 0.0020f, color32{255,255,255,(uint8_t)(actor->_ray_visibility * 80 )}},
+					line_point_t{r.pos+r.dir*(0.07f + 0.07f*scale), 0.0015f, color32{255,255,255,(uint8_t)(actor->_ray_visibility * 25 )}},
 					line_point_t{r.pos+r.dir*(0.07f + 0.11f*scale), 0.001f,  color32{255,255,255,0}} };
 				line_add_listv(points, 5);
 			}
@@ -817,7 +817,7 @@ void ui_update_late() {
 	hierarchy_pop();
 	for (int32_t i = 0; i < skui_interactors.count; i++)
 	{
-		line_add_axis({ skui_interactors[i].hit_at_world, quat_identity }, skui_interactors[i].active_prev != 0 ? 0.01f : 0.005f);
+		line_add_axis({ skui_interactors[i]._hit_at_world, quat_identity }, skui_interactors[i].active_prev != 0 ? 0.01f : 0.005f);
 	}
 }
 
@@ -1580,10 +1580,8 @@ bool32_t ui_hslider_at_g(const C *id_text, N &value, N min, N max, N step, vec3 
 	}
 	
 	if (actor >= 0) {
-		if (button_state & button_state_just_active)
-			sound_play(skui_snd_interact, skui_interactors[actor].hit_at_world, 1);
-		else if (button_state & button_state_just_inactive)
-			sound_play(skui_snd_uninteract, skui_interactors[actor].hit_at_world, 1);
+		if      (button_state & button_state_just_active)   sound_play(skui_snd_interact,   skui_interactors[actor]._hit_at_world, 1);
+		else if (button_state & button_state_just_inactive) sound_play(skui_snd_uninteract, skui_interactors[actor]._hit_at_world, 1);
 	}
 
 	return result;
@@ -1669,12 +1667,12 @@ bool32_t _ui_handle_begin(ui_hash_t id, pose_t &movement, bounds_t handle, bool3
 		if (active & button_state_just_active) {
 			start_handle_pos[0] = movement.position;
 			start_handle_rot[0] = movement.orientation;
-			start_palm_pos  [0] = matrix_transform_pt  (to_local, h->motion_pose_world_action.position);
-			start_palm_rot  [0] = matrix_transform_quat(to_local, h->motion_pose_world_action.orientation);
+			start_palm_pos  [0] = matrix_transform_pt  (to_local, h->_motion_pose_world_action.position);
+			start_palm_rot  [0] = matrix_transform_quat(to_local, h->_motion_pose_world_action.orientation);
 
-			matrix to_edit_local = matrix_invert(pose_matrix(h->motion_pose_world_action));
+			matrix to_edit_local = matrix_invert(pose_matrix(h->_motion_pose_world_action));
 			edit_local_pose     = matrix_transform_pose(to_edit_local, movement);
-			handle_local_offset = hierarchy_to_local_point(h->motion_pose_world_action.position);
+			handle_local_offset = hierarchy_to_local_point(h->_motion_pose_world_action.position);
 		}
 
 		if (active & button_state_active) {

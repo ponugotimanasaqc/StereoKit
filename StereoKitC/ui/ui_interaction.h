@@ -51,22 +51,22 @@ struct ui_interactor_t {
 	float                ray_minimum_dist;
 	float                head_minimum_dist;
 
-	float                ray_visibility;
+	float                _ray_visibility;
 	
 	pose_t               motion_pose_world;
-	pose_t               motion_pose_local;
-	pose_t               motion_pose_world_action;
+	pose_t               _motion_pose_local;
+	pose_t               _motion_pose_world_action;
 	
 	pose_t               hit_test_world;
-	pose_t               hit_test_world_prev;
-	pose_t               hit_test_local;
-	pose_t               hit_test_local_prev;
-	pose_t               hit_test_world_action;
-	vec3                 hit_test_local_dir;
-	vec3                 hit_test_world_dir;
+	pose_t               _hit_test_world_prev;
+	pose_t               _hit_test_local;
+	pose_t               _hit_test_local_prev;
+	pose_t               _hit_test_world_action;
+	vec3                 _hit_test_local_dir;
+	vec3                 _hit_test_world_dir;
 	
-	vec3                 hit_at_world;
-	vec3                 hit_at_action_local;
+	vec3                 _hit_at_world;
+	vec3                 _hit_at_action_local;
 };
 
 typedef int32_t ui_interactor_id_t;

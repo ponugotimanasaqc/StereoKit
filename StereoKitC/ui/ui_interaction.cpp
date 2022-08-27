@@ -13,11 +13,11 @@ void ui_interactors_update_local(matrix to_local) {
 	for (int32_t i = 0; i < skui_interactors.count; i++) {
 		ui_interactor_t* actor = &skui_interactors[i];
 		
-		actor->hit_test_local      = matrix_transform_pose(to_local, actor->hit_test_world);
-		actor->hit_test_local_prev = matrix_transform_pose(to_local, actor->hit_test_world_prev);
-		actor->motion_pose_local   = matrix_transform_pose(to_local, actor->motion_pose_world);
+		actor->_hit_test_local      = matrix_transform_pose(to_local, actor->hit_test_world);
+		actor->_hit_test_local_prev = matrix_transform_pose(to_local, actor->_hit_test_world_prev);
+		actor->_motion_pose_local   = matrix_transform_pose(to_local, actor->motion_pose_world);
 		if (actor->type == ui_interactor_type_ray) {
-			actor->hit_test_local_dir = actor->hit_test_local.orientation * vec3_forward;
+			actor->_hit_test_local_dir = actor->_hit_test_local.orientation * vec3_forward;
 		}
 	}
 }
@@ -49,15 +49,15 @@ bool32_t ui_interact_box(const ui_interactor_t *actor, bounds_t box, vec3 *out_a
 
 	switch (actor->type) {
 	case ui_interactor_type_point: {
-		bool32_t result = ui_in_box(actor->hit_test_local.position, actor->hit_test_local_prev.position, actor->radius, box);
+		bool32_t result = ui_in_box(actor->_hit_test_local.position, actor->_hit_test_local_prev.position, actor->radius, box);
 		if (result) {
-			*out_at       = actor->hit_test_local.position;
+			*out_at       = actor->_hit_test_local.position;
 			*out_priority = bounds_sdf_manhattan(box, *out_at);
 		}
 		return result;
 	} break;
 	case ui_interactor_type_ray: {
-		ray_t    ray    = { actor->hit_test_local.position, actor->hit_test_local_dir };
+		ray_t    ray    = { actor->_hit_test_local.position, actor->_hit_test_local_dir };
 		float    dist   = 0;
 		bool32_t result = ui_intersect_box(ray, box, &dist);
 		if (result) {
@@ -160,7 +160,7 @@ void ui_interaction_2h(ui_hash_t id, ui_interactor_event_ event_mask, bounds_t b
 		// around a bit.
 		/*if (actor->focused_prev == id) {
 			if (actor->state & button_state_just_active) {
-				actor->motion_pose_world_action = actor->motion_pose_world;
+				actor->_motion_pose_world_action = actor->motion_pose_world;
 			}
 			if (actor->active_prev == id || actor->active == id) {
 				result = true;
@@ -317,10 +317,10 @@ button_state_ ui_interactor_set_active(ui_interactor_id_t interactor, ui_hash_t 
 	if (!is_active &&  was_active) result |= button_state_just_inactive;
 
 	if (result & button_state_just_active) {
-		actor->motion_pose_world_action = actor->motion_pose_world;
-		actor->hit_test_world_action    = actor->hit_test_world;
-		actor->hit_at_world             = hierarchy_to_world_point(at);
-		actor->hit_at_action_local      = matrix_transform_pt(matrix_invert(pose_matrix(actor->motion_pose_world)), actor->hit_at_world);
+		actor->_motion_pose_world_action = actor->motion_pose_world;
+		actor->_hit_test_world_action    = actor->hit_test_world;
+		actor->_hit_at_world             = hierarchy_to_world_point(at);
+		actor->_hit_at_action_local      = matrix_transform_pt(matrix_invert(pose_matrix(actor->motion_pose_world)), actor->_hit_at_world);
 	}
 	
 	return result;
