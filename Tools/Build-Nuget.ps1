@@ -1,11 +1,12 @@
 param(
     [switch]$upload = $false,
     [switch]$fast = $false,
-    [switch]$pack = $true,
-    [switch]$buildWindows    = $true,
-    [switch]$buildWindowsUWP = $true,
-    [switch]$buildLinux      = $true,
-    [switch]$buildAndroid    = $true,
+    [bool]$pack = $true,
+    [bool]$buildWindows = $true,
+    [bool]$buildWindowsUWP = $true,
+    [bool]$buildLinux = $true,
+    [bool]$buildAndroid = $true,
+    [bool]$runTests = $true,
     [string]$key = ''
 )
 
@@ -13,6 +14,11 @@ Import-Module $PSScriptRoot/Build-Utils.psm1
 
 # Only allow an upload when everything is getting built
 $upload = $upload -and $pack -and $buildWindows -and $buildWindowsUWP -and $buildLinux -and $buildAndroid
+Write-Host 'Building for:'
+if ($buildWindows    -eq $true) { Write-Host '. Windows' }
+if ($buildWindowsUWP -eq $true) { Write-Host '. UWP' }
+if ($buildLinux      -eq $true) { Write-Host '. Linux' }
+if ($buildAndroid    -eq $true) { Write-Host '. Android' }
 
 ###########################################
 ## Functions                             ##
@@ -166,7 +172,7 @@ if (!(Test-Path 'bin')) {
 
 #### Build Windows ########################
 
-if ($buildWindows) {
+if ($buildWindows -eq $true) {
     Write-Host @"
 
 __      __          _               
@@ -198,7 +204,7 @@ __      __          _
     #Write-Host "--- Finished building: Win32 ARM64 ---" -ForegroundColor green
 
     # Build UWP next
-    if ($buildWindowsUWP) {
+    if ($buildWindowsUWP -eq $true) {
         Write-Host "--- Beginning build: UWP x64 ---" -ForegroundColor green
         $result = Build -mode "Release|X64" -project "StereoKitC_UWP"
         if ($result -ne 0) {
@@ -228,7 +234,7 @@ __      __          _
     #### Execute Windows Tests ########################
 
     # Run tests!
-    if ($fast -eq $false) {
+    if ($fast -eq $false -and $runTests -eq $true) {
         Write-Host "`nRunning Windows Tests!"
         if ( Test -ne 0 ) {
             Write-Host '--- Tests failed! Stopping build! ---' -ForegroundColor red
@@ -237,12 +243,12 @@ __      __          _
         }
         Write-Host 'Tests passed!' -ForegroundColor green
     } else {
-        Write-Host "`nSkipping tests for fast build!" -ForegroundColor yellow
+        Write-Host "`nSkipping tests" -ForegroundColor yellow
     }
 }
 
 #### Build Linux ##########################
-if ($buildLinux) {
+if ($buildLinux -eq $true) {
     Write-Host @"
 
   _                   
@@ -294,7 +300,7 @@ if ($buildLinux) {
 
 #### Build Android ########################
 
-if ($buildAndroid) {
+if ($buildAndroid -eq $true) {
     Write-Host @"
 
     _           _              _ 
@@ -326,7 +332,7 @@ if ($buildAndroid) {
 
 #### Assemble NuGet Package ###############
 
-if ($pack) {
+if ($pack -eq $true) {
     Write-Host @"
 
   _  _       ___     _   
@@ -361,7 +367,7 @@ if ($pack) {
 
     #### Upload NuGet Package #################
 
-    if ($upload) {
+    if ($upload -eq $true) {
         $key = Get-Key
         if ($key -ne '') {
             & dotnet nuget push "bin\StereoKit.$version.nupkg" -k $key -s https://api.nuget.org/v3/index.json

@@ -33,4 +33,4 @@ jobs:
         actions-cache-folder: '.xmake-cache'
 
     - name: Build script
-      run: ./Tools/Build-Nuget.ps1 -pack=false -buildWindowsUWP=false -buildLinux=false -buildAndroid=false
+      run: ./Tools/Build-Nuget.ps1 -pack 0 -buildWindowsUWP 0 -buildLinux 0 -buildAndroid 0 -runTests 0
