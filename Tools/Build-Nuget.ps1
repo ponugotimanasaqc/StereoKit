@@ -12,14 +12,6 @@ $buildWindowsUWP = $true
 $buildLinux      = $true
 $buildAndroid    = $true
 
-# Get the Visual Studio executable for building
-$vs = Get-VSInfo
-if (!$vs.exe) {
-    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Valid Visual Studio version not found!" -ForegroundColor red
-    exit 1
-}
-$vsExe = [io.path]::ChangeExtension($vs.Exe, '.com')
-
 ###########################################
 ## Functions                             ##
 ###########################################
@@ -138,22 +130,37 @@ Write-Host "v$($sk.version)`n" -ForegroundColor Cyan
 # Ensure the version string for the package matches the StereoKit version
 Update-SKVersion($sk)
 
+#### Get Visual Studio ####################
+
+# Get the Visual Studio executable for building
+$vs = Get-VSInfo
+if (!$vs.exe) {
+    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Valid Visual Studio version not found!" -ForegroundColor red
+    exit 1
+}
+Write-Host "Using $($vs.generator)" -ForegroundColor green
+$vsExe = [io.path]::ChangeExtension($vs.Exe, '.com')
+
 #### Clean Project ########################
 
 # Clean out the old files, do a full build
-if (Test-Path 'bin\distribute') {
-    Remove-Item 'bin\distribute' -Recurse
+if (!(Test-Path 'bins')) {
+    Write-Host 'No bin to clean, skipping clean step.'
+} else {
+    if (Test-Path 'bin\distribute') {
+        Remove-Item 'bin\distribute' -Recurse
+    }
+    Write-Host 'Cleaning old files...'
+    if ($fast -eq $false) {
+        & $vsExe 'StereoKit.sln' '/Clean' 'Release|X64' | Out-Null
+        Write-Host '..cleaned Release x64'
+        & $vsExe 'StereoKit.sln' '/Clean' 'Release|ARM64' | Out-Null
+        Write-Host '..cleaned Release ARM64'
+        & $vsExe 'StereoKit.sln' '/Clean' 'Release|ARM' | Out-Null
+        Write-Host '..cleaned Release ARM'
+    }
+    Write-Host 'Cleaned'
 }
-Write-Host 'Cleaning old files...'
-if ($fast -eq $false) {
-    & $vsExe 'StereoKit.sln' '/Clean' 'Release|X64' | Out-Null
-    Write-Host '..cleaned Release x64'
-    & $vsExe 'StereoKit.sln' '/Clean' 'Release|ARM64' | Out-Null
-    Write-Host '..cleaned Release ARM64'
-    & $vsExe 'StereoKit.sln' '/Clean' 'Release|ARM' | Out-Null
-    Write-Host '..cleaned Release ARM'
-}
-Write-Host 'Cleaned'
 
 #### Build Windows ########################
 
