@@ -19,7 +19,7 @@ jobs:
           path: |
             .xmake-cache
             .deps_cache
-            
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
