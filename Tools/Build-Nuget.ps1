@@ -4,7 +4,7 @@ param(
     [string]$key = ''
 )
 
-Import-Module ./Build-Utils.psm1
+Import-Module $PSScriptRoot/Build-Utils.psm1
 
 # In case we only want to build a subset of the package
 $buildWindows    = $true
@@ -144,7 +144,7 @@ $vsExe = [io.path]::ChangeExtension($vs.Exe, '.com')
 #### Clean Project ########################
 
 # Clean out the old files, do a full build
-if (!(Test-Path 'bins')) {
+if (!(Test-Path 'bin')) {
     Write-Host 'No bin to clean, skipping clean step.'
 } else {
     if (Test-Path 'bin\distribute') {
