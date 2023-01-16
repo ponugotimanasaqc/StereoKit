@@ -13,13 +13,23 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Get cache
+      uses: actions/cache@v3
+        with:
+          path: |
+            .xmake-cache
+            .deps_cache
+            
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 7.0.x
+
     - name: Setup xmake
       uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: '2.7.5'
+        actions-cache-folder: '.xmake-cache'
+
     - name: Build script
       run: ./Tools/Build-Nuget.ps1

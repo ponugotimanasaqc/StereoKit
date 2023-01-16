@@ -5,12 +5,12 @@ param(
     [string]$plat = 'UWP',
     [ValidateSet('Release','Debug')]
     [string]$config = 'Release',
-    [string]$gitCache = 'C:\Temp\StereoKitBuild',
+    [string]$gitCache = "$PSScriptRoot/../.deps_cache",
     [string]$libOut = '..\StereoKitC\lib'
 )
 
-function Get-LineNumber { return $MyInvocation.ScriptLineNumber }
-function Get-ScriptName { return $MyInvocation.ScriptName }
+Import-Module $PSScriptRoot/Build-Utils.psm1
+
 function FormatPath { param([string]$path) 
     $archplat = $script:arch
     if ($script:plat -eq 'UWP') {
@@ -123,8 +123,8 @@ Push-Location -Path $PSScriptRoot
 # Get the files that contain data about the current dependencies
 $sourceFile = Get-Content -Path '..\xmake.lua'
 $depsFile   = ''
-if (Test-Path -Path 'deps_current.txt' -PathType Leaf) {
-    $depsFile = Get-Content -Path 'deps_current.txt' -Raw
+if (Test-Path -Path "$gitCache/deps_current.txt" -PathType Leaf) {
+    $depsFile = Get-Content -Path "$gitCache/deps_current.txt" -Raw
 }
 # Read a hash table from the file
 $dependencyVersions = ConvertFrom-StringData -String $depsFile
@@ -159,56 +159,27 @@ if (!$dependenciesDirty) {
 }
 
 #############################################
-######## Check Visual Studio version ########
+###### Check our toolchain dependenies ######
 #############################################
 
-# Get the Visual Studio executable for building
-$vsWhere        = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
-$vsVersionRange = '[16.0,18.0)'
-$vsExe          = & $vsWhere -latest -prerelease -property productPath -version $vsVersionRange
-if (!$vsExe) {
+$vs = Get-VSInfo
+if (!$vs.exe) {
     Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Valid Visual Studio version not found!" -ForegroundColor red
-    exit 
+    exit 1
 }
-$vsYear          = & $vsWhere -latest -property catalog_productLineVersion -version $vsVersionRange
-$vsVersion       = & $vsWhere -latest -property catalog_buildVersion -version $vsVersionRange
-$vsVersion       = $vsVersion.Split(".")[0]
-$vsGeneratorName = "Visual Studio $vsVersion $vsYear"
-Write-Host "Using $vsGeneratorName" -ForegroundColor green
+Write-Host "Using $($vs.generator)" -ForegroundColor green
 
-#####################################
-######## Check CMake version ########
-#####################################
-
-# Check for cmake 3.21
-$cmakeCmd = 'cmake'
-if (!(Get-Command "$cmakeCmd" -errorAction SilentlyContinue))
-{
-    # cmake is not in PATH, ask vswhere for a cmake version
-    $cmakeCmd = & $vsWhere -latest -prerelease -version $vsVersionRange -requires Microsoft.VisualStudio.Component.VC.CMake.Project -find 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
-    if ($cmakeCmd -eq "" -or $null -eq $cmakeCmd -or !(Get-Command "$cmakeCmd" -errorAction SilentlyContinue))
-    {
-        # No cmake available, error out and point users to cmake's website 
-        Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake not detected! It is needed to build dependencies, please install or add to Path!" -ForegroundColor red
-        Start-Process 'https://cmake.org/'
-        exit 1
-    }
-}
-$Matches = {}
-$cmakeVersion = & $cmakeCmd --version
-$cmakeVersion = [string]$cmakeVersion
-$cmakeVersion -match '(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)' | Out-Null
-$cmvMajor = $Matches.Major
-$cmvMinor = $Matches.Minor
-$cmvPatch = $Matches.Patch
-if ( $cmvMajor -lt 3 -or
-    ($cmvMajor -eq 3 -and $cmvMinor -lt 21)) {
-    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake version must be greater than 3.21! Found $cmvMajor.$cmvMinor.$cmvPatch. Please update and try again!" -ForegroundColor red
+$cmake = Get-Cmake
+if (!$cmake.exe) {
+    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake not detected! It is needed to build dependencies, please install or add to Path!" -ForegroundColor red
     Start-Process 'https://cmake.org/'
     exit 1
-} else {
-    Write-Host "Using cmake version: $cmvMajor.$cmvMinor.$cmvPatch" -ForegroundColor green
+} elseif ( $cmake.major -lt 3 -or ($cmake.major -eq 3 -and $cmake.minor -lt 21)) {
+    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake version must be greater than 3.21! Found $($cmake.version). Please update and try again!" -ForegroundColor red
+    Start-Process 'https://cmake.org/'
+    exit 1
 }
+Write-Host "Using Cmake version: $($cmake.version)" -ForegroundColor green
 
 ########################################
 ######## Build the Dependencies ########
@@ -248,9 +219,9 @@ foreach($dep in $dependencies) {
         $vsArch = 'Win32'
     }
     if ($plat -eq 'UWP') {
-        & $cmakeCmd -G $vsGeneratorName -A $vsArch "-DCMAKE_BUILD_TYPE=$config" $dep.CmakeOptions '-DCMAKE_CXX_FLAGS=/MP' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DDYNAMIC_LOADER=OFF' '-Wno-deprecated' '-Wno-dev' ..
+        & $cmake.exe -G $vs.generator -A $vsArch "-DCMAKE_BUILD_TYPE=$config" $dep.CmakeOptions '-DCMAKE_CXX_FLAGS=/MP' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DDYNAMIC_LOADER=OFF' '-Wno-deprecated' '-Wno-dev' ..
     } else {
-        & $cmakeCmd -G $vsGeneratorName -A $vsArch "-DCMAKE_BUILD_TYPE=$config" $dep.CmakeOptions '-DCMAKE_CXX_FLAGS=/MP' '-DDYNAMIC_LOADER=OFF' '-Wno-deprecated' '-Wno-dev' ..
+        & $cmake.exe -G $vs.generator -A $vsArch "-DCMAKE_BUILD_TYPE=$config" $dep.CmakeOptions '-DCMAKE_CXX_FLAGS=/MP' '-DDYNAMIC_LOADER=OFF' '-Wno-deprecated' '-Wno-dev' ..
     }
     if ($LASTEXITCODE -ne 0) {
         Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: --- $($dep.Name) config failed! Stopping build! ---" -ForegroundColor red
@@ -259,7 +230,7 @@ foreach($dep in $dependencies) {
 
     # And build it all!
     Write-Host "$($dep.Name): Building $arch $plat" -ForegroundColor green
-    & $cmakeCmd --build . --config $config -- /m
+    & $cmake.exe --build . --config $config -- /m
     if ($LASTEXITCODE -ne 0) {
         Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: --- $($dep.Name) build failed! Stopping build! ---" -ForegroundColor red
         exit 1
@@ -282,6 +253,6 @@ foreach($dep in $dependencies) {
 }
 
 # Save dependencies and their current versions to file
-$dependencyVersions.GetEnumerator() | ForEach-Object { "{0} = {1}" -f $_.Name, $_.Value } | Set-Content 'deps_current.txt'
+$dependencyVersions.GetEnumerator() | ForEach-Object { "{0} = {1}" -f $_.Name, $_.Value } | Set-Content "$gitCache/deps_current.txt"
 
 Pop-Location

@@ -1,4 +1,5 @@
-$vsWhere = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
+$vsWhere        = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
+$vsVersionRange = '[16.0,18.0)'
 
 ###########################################
 
@@ -9,7 +10,7 @@ function Get-ScriptName { return $MyInvocation.ScriptName }
 
 function Get-VSInfo {
     # Get the Visual Studio executable for building
-    $vsVersionRange = '[16.0,18.0)'
+
     $vsExe          = & $vsWhere -latest -prerelease -property productPath -version $vsVersionRange
     if (!$vsExe) {
         return

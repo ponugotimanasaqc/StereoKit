@@ -184,7 +184,7 @@ __      __          _
     if ($result -ne 0) {
         Write-Host '--- Win32 x64 build failed! Stopping build! ---' -ForegroundColor red
         Pop-Location
-        exit
+        exit 1
     }
     Write-Host "--- Finished building: Win32 x64 ---" -ForegroundColor green
     #Write-Host "--- Beginning build: Win32 ARM64 ---" -ForegroundColor green
@@ -202,7 +202,7 @@ __      __          _
         if ($result -ne 0) {
             Write-Host '--- UWP x64 build failed! Stopping build! ---' -ForegroundColor red
             Pop-Location
-            exit
+            exit 1
         }
         Write-Host "--- Finished building: UWP x64 ---" -ForegroundColor green
         Write-Host "--- Beginning build: UWP ARM64 ---" -ForegroundColor green
@@ -210,7 +210,7 @@ __      __          _
         if ($result -ne 0) {
             Write-Host '--- UWP ARM64 build failed! Stopping build! ---' -ForegroundColor red
             Pop-Location
-            exit
+            exit 1
         }
         Write-Host "--- Finished building: UWP ARM64 ---" -ForegroundColor green
         Write-Host "--- Beginning build: UWP ARM ---" -ForegroundColor green
@@ -218,7 +218,7 @@ __      __          _
         if ($result -ne 0) {
             Write-Host '--- UWP ARM build failed! Stopping build! ---' -ForegroundColor red
             Pop-Location
-            exit
+            exit 1
         }
         Write-Host "--- Finished building: UWP ARM ---" -ForegroundColor green
     }
@@ -231,7 +231,7 @@ __      __          _
         if ( Test -ne 0 ) {
             Write-Host '--- Tests failed! Stopping build! ---' -ForegroundColor red
             Pop-Location
-            exit
+            exit 1
         }
         Write-Host 'Tests passed!' -ForegroundColor green
     } else {
@@ -271,7 +271,7 @@ if ($buildLinux) {
     if ($LASTEXITCODE -ne 0) {
         Write-Host '--- Linux build failed! Stopping build! ---' -ForegroundColor red
         Pop-Location
-        exit
+        exit 1
     }
     Write-Host '--- Finished building: Linux ARM64 ---' -ForegroundColor green
 
@@ -285,7 +285,7 @@ if ($buildLinux) {
     if ($LASTEXITCODE -ne 0) {
         Write-Host '--- Linux build failed! Stopping build! ---' -ForegroundColor red
         Pop-Location
-        exit
+        exit 1
     }
     Write-Host '--- Finished building: Linux x64 ---' -ForegroundColor green
 }
@@ -317,7 +317,7 @@ if ($buildAndroid) {
     if ($LASTEXITCODE -ne 0) {
         Write-Host '--- Android build failed! Stopping build! ---' -ForegroundColor red
         Pop-Location
-        exit
+        exit 1
     }
     Write-Host '--- Finished building: Android arm64-v8a ---' -ForegroundColor green
 }
@@ -343,7 +343,7 @@ Update-File -file 'StereoKit\StereoKit.csproj' -text $packageOn -with $packageOf
 if ($result -ne 0) {
     Write-Host '--- NuGet build failed! Stopping build! ---' -ForegroundColor red
     Pop-Location
-    exit
+    exit 1
 }
 Write-Host "--- Finished building: NuGet package ---"-ForegroundColor green
 
