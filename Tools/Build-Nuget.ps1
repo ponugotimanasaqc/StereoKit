@@ -4,8 +4,7 @@ param(
     [string]$key = ''
 )
 
-function Get-LineNumber { return $MyInvocation.ScriptLineNumber }
-function Get-ScriptName { return $MyInvocation.ScriptName }
+Import-Module ./Build-Utils.psm1
 
 # In case we only want to build a subset of the package
 $buildWindows    = $true
@@ -14,25 +13,15 @@ $buildLinux      = $true
 $buildAndroid    = $true
 
 # Get the Visual Studio executable for building
-$vsWhere        = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
-$vsVersionRange = '[16.0,18.0)'
-$vsExe          = & $vsWhere -latest -property productPath -version $vsVersionRange
-if (!$vsExe) {
+$vs = Get-VSInfo
+if (!$vs.exe) {
     Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Valid Visual Studio version not found!" -ForegroundColor red
-    exit 
+    exit 1
 }
-$vsExe = [io.path]::ChangeExtension($vsExe, '.com')
+$vsExe = [io.path]::ChangeExtension($vs.Exe, '.com')
 
 ###########################################
 ## Functions                             ##
-###########################################
-
-function Replace-In-File {
-    param($file, $text, $with)
-
-    ((Get-Content -path $file) -replace $text,$with) | Set-Content -path $file
-}
-
 ###########################################
 
 function Build {
@@ -133,20 +122,7 @@ Push-Location -Path "$PSScriptRoot\.."
 #### Update Version #######################
 
 # Print version, so we know we're building the right version right away
-$fileData = Get-Content -path 'StereoKitC\stereokit.h' -Raw;
-$fileData -match '#define SK_VERSION_MAJOR\s+(?<ver>\d+)' | Out-Null
-$major = $Matches.ver
-$fileData -match '#define SK_VERSION_MINOR\s+(?<ver>\d+)' | Out-Null
-$minor = $Matches.ver
-$fileData -match '#define SK_VERSION_PATCH\s+(?<ver>\d+)' | Out-Null
-$patch = $Matches.ver
-$fileData -match '#define SK_VERSION_PRERELEASE\s+(?<ver>\d+)' | Out-Null
-$pre = $Matches.ver
-
-$version = "$major.$minor.$patch"
-if ($pre -ne 0) {
-    $version = "$version-preview.$pre"
-}
+$sk = Get-SKVersion
 
 # Notify of build, and output the version
 Write-Host @"
@@ -157,12 +133,10 @@ Write-Host @"
   ____) | ||  __/ | |  __/ ( ) |   \| | |_ 
  |_____/ \__\___|_|  \___|\___/|_|\_\_|\__| 
 "@ -NoNewline -ForegroundColor White
-Write-Host "v$version`n" -ForegroundColor Cyan
+Write-Host "v$($sk.version)`n" -ForegroundColor Cyan
 
 # Ensure the version string for the package matches the StereoKit version
-Replace-In-File -file 'StereoKit\StereoKit.csproj' -text '<Version>(.*)</Version>' -with "<Version>$version</Version>"
-Replace-In-File -file 'xmake.lua' -text 'set_version(.*)' -with "set_version(`"$version`")"
-Replace-In-File -file 'CMakeLists.txt' -text 'StereoKit VERSION "(.*)"' -with "StereoKit VERSION `"$major.$minor.$patch`""
+Update-SKVersion($sk)
 
 #### Clean Project ########################
 
@@ -356,9 +330,9 @@ Write-Host "--- Beginning build: NuGet package ---" -ForegroundColor green
 # Turn on NuGet package generation, build, then turn it off again
 $packageOff = '<GeneratePackageOnBuild>false</GeneratePackageOnBuild>'
 $packageOn  = '<GeneratePackageOnBuild>true</GeneratePackageOnBuild>'
-Replace-In-File -file 'StereoKit\StereoKit.csproj' -text $packageOff -with $packageOn
+Update-File -file 'StereoKit\StereoKit.csproj' -text $packageOff -with $packageOn
 $result = Build -mode "Release|Any CPU" -project "StereoKit"
-Replace-In-File -file 'StereoKit\StereoKit.csproj' -text $packageOn -with $packageOff
+Update-File -file 'StereoKit\StereoKit.csproj' -text $packageOn -with $packageOff
 if ($result -ne 0) {
     Write-Host '--- NuGet build failed! Stopping build! ---' -ForegroundColor red
     Pop-Location
