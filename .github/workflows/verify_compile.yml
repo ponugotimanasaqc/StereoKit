@@ -21,9 +21,5 @@ jobs:
       uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: '2.7.5'
-    - name: Restore dependencies
-      run: dotnet restore $PROJECT
-    - name: Pack
-      run: dotnet pack --configuration Release $PROJECT
-    - name: Publish
-      run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
+    - name: Build script
+      run: ./Tools/Build-Nuget.ps1
