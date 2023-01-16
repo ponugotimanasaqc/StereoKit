@@ -1,16 +1,18 @@
 param(
     [switch]$upload = $false,
     [switch]$fast = $false,
+    [switch]$pack = $true,
+    [switch]$buildWindows    = $true,
+    [switch]$buildWindowsUWP = $true,
+    [switch]$buildLinux      = $true,
+    [switch]$buildAndroid    = $true,
     [string]$key = ''
 )
 
 Import-Module $PSScriptRoot/Build-Utils.psm1
 
-# In case we only want to build a subset of the package
-$buildWindows    = $true
-$buildWindowsUWP = $true
-$buildLinux      = $true
-$buildAndroid    = $true
+# Only allow an upload when everything is getting built
+$upload = $upload -and $pack -and $buildWindows -and $buildWindowsUWP -and $buildLinux -and $buildAndroid
 
 ###########################################
 ## Functions                             ##
@@ -324,7 +326,8 @@ if ($buildAndroid) {
 
 #### Assemble NuGet Package ###############
 
-Write-Host @"
+if ($pack) {
+    Write-Host @"
 
   _  _       ___     _   
  | \| |_  _ / __|___| |_ 
@@ -333,39 +336,42 @@ Write-Host @"
                       
 "@ -ForegroundColor White
 
-Write-Host "--- Beginning build: NuGet package ---" -ForegroundColor green
-# Turn on NuGet package generation, build, then turn it off again
-$packageOff = '<GeneratePackageOnBuild>false</GeneratePackageOnBuild>'
-$packageOn  = '<GeneratePackageOnBuild>true</GeneratePackageOnBuild>'
-Update-File -file 'StereoKit\StereoKit.csproj' -text $packageOff -with $packageOn
-$result = Build -mode "Release|Any CPU" -project "StereoKit"
-Update-File -file 'StereoKit\StereoKit.csproj' -text $packageOn -with $packageOff
-if ($result -ne 0) {
-    Write-Host '--- NuGet build failed! Stopping build! ---' -ForegroundColor red
-    Pop-Location
-    exit 1
-}
-Write-Host "--- Finished building: NuGet package ---"-ForegroundColor green
+    Write-Host "--- Beginning build: NuGet package ---" -ForegroundColor green
+    # Turn on NuGet package generation, build, then turn it off again
+    $packageOff = '<GeneratePackageOnBuild>false</GeneratePackageOnBuild>'
+    $packageOn  = '<GeneratePackageOnBuild>true</GeneratePackageOnBuild>'
+    Update-File -file 'StereoKit\StereoKit.csproj' -text $packageOff -with $packageOn
+    $result = Build -mode "Release|Any CPU" -project "StereoKit"
+    Update-File -file 'StereoKit\StereoKit.csproj' -text $packageOn -with $packageOff
+    if ($result -ne 0) {
+        Write-Host '--- NuGet build failed! Stopping build! ---' -ForegroundColor red
+        Pop-Location
+        exit 1
+    }
+    Write-Host "--- Finished building: NuGet package ---"-ForegroundColor green
 
-#### Create Build Info File ###############
+    #### Create Build Info File ###############
 
-$build_size = Build-Sizes
-$build_info = "# StereoKit v$version Build Information
+    $build_size = Build-Sizes
+    $build_info = "# StereoKit v$version Build Information
 
-$build_size"
-Set-Content -path 'Tools\BuildInfo.md' -value $build_info
-Write-Host $build_info
+    $build_size"
+    Set-Content -path 'Tools\BuildInfo.md' -value $build_info
+    Write-Host $build_info
 
-#### Upload NuGet Package #################
+    #### Upload NuGet Package #################
 
-if ($upload) {
-    $key = Get-Key
-    if ($key -ne '') {
-        & dotnet nuget push "bin\StereoKit.$version.nupkg" -k $key -s https://api.nuget.org/v3/index.json
-    } else {
-        Write-Host 'No key, cancelling upload'
+    if ($upload) {
+        $key = Get-Key
+        if ($key -ne '') {
+            & dotnet nuget push "bin\StereoKit.$version.nupkg" -k $key -s https://api.nuget.org/v3/index.json
+        } else {
+            Write-Host 'No key, cancelling upload'
+        }
     }
 }
+
+#### Restore project ######################
 
 # Put the shaders back to cross-platform to make dev a little nicer!
 Write-Host "--- Restoring shaders to portable format for dev ---" -ForegroundColor green
