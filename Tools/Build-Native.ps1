@@ -7,68 +7,36 @@ param(
     [string]$config = 'Release'
 )
 
+Import-Module $PSScriptRoot/Build-Utils.psm1
+
 $build_folder = "$($plat)_$($arch)_$($config)"
 
-function Get-LineNumber { return $MyInvocation.ScriptLineNumber }
-function Get-ScriptName { return $MyInvocation.ScriptName }
-
 #############################################
-######## Check Visual Studio version ########
+######## Check required build tools #########
 #############################################
 
-if ($plat -eq 'UWP' -or $plat -eq 'Win32') {
-    # Get the Visual Studio executable for building
-    $vsWhere        = 'C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe'
-    $vsVersionRange = '[16.0,18.0)'
-    $vsExe          = & $vsWhere -latest -prerelease -property productPath -version $vsVersionRange
-    if (!$vsExe) {
-        Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Valid Visual Studio version not found!" -ForegroundColor red
-        exit 
-    }
-    $vsYear          = & $vsWhere -latest -property catalog_productLineVersion -version $vsVersionRange
-    $vsVersion       = & $vsWhere -latest -property catalog_buildVersion -version $vsVersionRange
-    $vsVersion       = $vsVersion.Split(".")[0]
-    $vsGeneratorName = "Visual Studio $vsVersion $vsYear"
-    Write-Host "Using $vsGeneratorName" -ForegroundColor green
+$vs = Get-VSInfo
+if (!$vs.exe -and $plat -ne 'Linux') {
+    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Valid Visual Studio version not found!" -ForegroundColor red
+    exit 1
 }
+Write-Host "Using $($vs.generator)" -ForegroundColor green
 
-#####################################
-######## Check CMake version ########
-#####################################
-
-# Check for cmake 3.21
-$cmakeCmd = 'cmake'
-if (!(Get-Command "$cmakeCmd" -errorAction SilentlyContinue))
-{
-    # cmake is not in PATH, ask vswhere for a cmake version
-    $cmakeCmd = & $vsWhere -latest -prerelease -version $vsVersionRange -requires Microsoft.VisualStudio.Component.VC.CMake.Project -find 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
-    if ($cmakeCmd -eq "" -or $null -eq $cmakeCmd -or !(Get-Command "$cmakeCmd" -errorAction SilentlyContinue))
-    {
-        # No cmake available, error out and point users to cmake's website 
-        Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake not detected! It is needed to build dependencies, please install or add to Path!" -ForegroundColor red
-        Start-Process 'https://cmake.org/'
-        exit 1
-    }
-}
-$Matches = {}
-$cmakeVersion = & $cmakeCmd --version
-$cmakeVersion = [string]$cmakeVersion
-$cmakeVersion -match '(?<Major>\d+)\.(?<Minor>\d+)\.(?<Patch>\d+)' | Out-Null
-$cmvMajor = $Matches.Major
-$cmvMinor = $Matches.Minor
-$cmvPatch = $Matches.Patch
-if ( $cmvMajor -lt 3 -or
-    ($cmvMajor -eq 3 -and $cmvMinor -lt 21)) {
-    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake version must be greater than 3.21! Found $cmvMajor.$cmvMinor.$cmvPatch. Please update and try again!" -ForegroundColor red
+$cmake = Get-Cmake
+if (!$cmake.exe) {
+    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake not detected! It is needed to build dependencies, please install or add to Path!" -ForegroundColor red
     Start-Process 'https://cmake.org/'
     exit 1
-} else {
-    Write-Host "Using cmake version: $cmvMajor.$cmvMinor.$cmvPatch" -ForegroundColor green
+} elseif ( $cmake.major -lt 3 -or ($cmake.major -eq 3 -and $cmake.minor -lt 21)) {
+    Write-Host "$(Get-ScriptName)($(Get-LineNumber),0): error: Cmake version must be greater than 3.21! Found $($cmake.version). Please update and try again!" -ForegroundColor red
+    Start-Process 'https://cmake.org/'
+    exit 1
 }
+Write-Host "Using Cmake version: $($cmake.version)" -ForegroundColor green
 
 ########################################
 
-Push-Location '..'
+Push-Location "$PSScriptRoot/.."
 if (!(Test-Path -Path 'build_cmake')) {
     New-Item -Path . -Name 'build_cmake' -ItemType "directory" | Out-Null
 }
@@ -84,7 +52,7 @@ if ($vsArch -eq 'x86') {
     $vsArch = 'Win32'
 }
 if ($plat -eq 'UWP') {
-    & $cmakeCmd -G $vsGeneratorName -A $vsArch "-DCMAKE_BUILD_TYPE=$config" '-DCMAKE_CXX_FLAGS=/MP' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DDYNAMIC_LOADER=ON' '-Wno-deprecated' '-Wno-dev' ../..
+    & $cmake.exe -G $vs.generator -A $vsArch "-DCMAKE_BUILD_TYPE=$config" '-DCMAKE_CXX_FLAGS=/MP' '-DCMAKE_SYSTEM_NAME=WindowsStore' '-DCMAKE_SYSTEM_VERSION=10.0' '-DDYNAMIC_LOADER=ON' '-Wno-deprecated' '-Wno-dev' ../..
 } elseif ($plat -eq 'Android') {
     # https://developer.android.com/ndk/guides/cmake
 
@@ -98,7 +66,7 @@ if ($plat -eq 'UWP') {
     if     ($arch -eq 'x64')   { $androidArch = 'x86_64'}
     elseif ($arch -eq 'ARM64') { $androidArch = 'arm64-v8a' }
 
-    & $cmakeCmd -G Ninja `
+    & $cmake.exe -G Ninja `
         "-DCMAKE_BUILD_TYPE=$config" `
         "-DANDROID_ABI=$androidArch" `
         "-DCMAKE_ANDROID_ARCH_ABI=$androidArch" `
@@ -115,8 +83,10 @@ if ($plat -eq 'UWP') {
         '-Wno-dev' `
         ../..
 
+} elseif ($plat -eq 'Linux') {
+    & $cmake.exe -A $vsArch "-DCMAKE_BUILD_TYPE=$config" '-DCMAKE_CXX_FLAGS=/MP' '-DDYNAMIC_LOADER=ON' '-Wno-deprecated' '-Wno-dev' ../..
 } else {
-    & $cmakeCmd -G $vsGeneratorName -A $vsArch "-DCMAKE_BUILD_TYPE=$config" '-DCMAKE_CXX_FLAGS=/MP' '-DDYNAMIC_LOADER=ON' '-Wno-deprecated' '-Wno-dev' ../..
+    & $cmake.exe -G $vs.generator -A $vsArch "-DCMAKE_BUILD_TYPE=$config" '-DCMAKE_CXX_FLAGS=/MP' '-DDYNAMIC_LOADER=ON' '-Wno-deprecated' '-Wno-dev' ../..
 }
 
 if ($LASTEXITCODE -ne 0) {
@@ -125,7 +95,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "Building $arch $plat" -ForegroundColor green
-& $cmakeCmd --build . --config $config --
+& $cmake.exe --build . --config $config --
 
 Pop-Location
 Pop-Location
