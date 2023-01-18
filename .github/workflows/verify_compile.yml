@@ -7,12 +7,13 @@ jobs:
   build:
 
     env:
-      PROJECT: StereoKit.Templates.csproj
+      CPM_SOURCE_CACHE: .deps_cache/CPM
       
     runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Get cache
       uses: actions/cache@v3
       with:
@@ -21,16 +22,8 @@ jobs:
           .xmake-cache
           .deps_cache
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 7.0.x
+    - name: Build Win32
+      run: ./Tools/Build-Native.ps1 -arch x64 -plat Win32
 
-    - name: Setup xmake
-      uses: xmake-io/github-action-setup-xmake@v1
-      with:
-        xmake-version: '2.7.5'
-        actions-cache-folder: '.xmake-cache'
-
-    - name: Build script
-      run: ./Tools/Build-Nuget.ps1 -pack 0 -buildWindowsUWP 0 -buildLinux 0 -buildAndroid 0 -runTests 0
+    - name: Build UWP
+      run: ./Tools/Build-Native.ps1 -arch x64 -plat UWP
