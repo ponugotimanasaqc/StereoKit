@@ -51,4 +51,8 @@ void          render_list_execute         (render_list_t list, render_layer_ fil
 void          render_list_execute_material(render_list_t list, render_layer_ filter, uint32_t view_count, int32_t queue_start, int32_t queue_end, material_t override_material);
 void          render_list_clear           (render_list_t list);
 
+void          render_surfaces();
+void          render_surface_set_view(const char* id, int32_t width, int32_t height, int32_t msaa, tex_format_ color_format, tex_format_ depth_format, matrix* in_arr_view, matrix* in_arr_projection, int32_t count);
+tex_t         render_surface_get_tex (const char* id);
+
 } // namespace sk

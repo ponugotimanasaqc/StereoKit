@@ -4,6 +4,7 @@
 #include "../device.h"
 #include "../libraries/sk_gpu.h"
 #include "../libraries/stref.h"
+#include "../libraries/ferr_hash.h"
 #include "../sk_math_dx.h"
 #include "../sk_memory.h"
 #include "../spherical_harmonics.h"
@@ -1288,6 +1289,111 @@ void render_list_clear(render_list_t list) {
 	render_lists[list].stats   = {};
 	render_lists[list].prepped = false;
 	render_lists[list].state   = render_list_state_empty;
+}
+
+///////////////////////////////////////////
+// Render Surfaces                       //
+///////////////////////////////////////////
+
+struct render_surface_t {
+	uint64_t id;
+	uint64_t properties;
+	matrix*  arr_view;
+	matrix*  arr_projection;
+	int32_t  count;
+	tex_t    tex;
+};
+
+array_t<render_surface_t> renderer_surfaces = {};
+
+///////////////////////////////////////////
+
+int32_t render_surface_get_id(const char *id) {
+	uint64_t id_hash       = hash_fnv64_string(id);
+	int32_t  surface_index = -1;
+	for (int32_t i = 0; i < renderer_surfaces.count; i++) {
+		if (renderer_surfaces[i].id == id_hash) {
+			surface_index = i;
+			break;
+		}
+	}
+	return surface_index;
+}
+
+///////////////////////////////////////////
+
+render_surface_t *render_surface_get(const char* id) {
+	int32_t surface_index = render_surface_get_id(id);
+	return surface_index == -1 
+		? nullptr
+		: &renderer_surfaces[surface_index];
+}
+
+///////////////////////////////////////////
+
+void render_surfaces() {
+	skg_draw_begin();
+
+	render_surface_t *primary = render_surface_get("primary");
+	if (primary) {
+		skg_tex_target_bind(&primary->tex->tex);
+
+		color128 col = render_get_clear_color_ln();
+		skg_target_clear(true, &col.r);
+
+		render_draw_matrix(primary->arr_view, primary->arr_projection, primary->count, render_get_filter());
+	}
+
+	render_clear();
+}
+
+///////////////////////////////////////////
+
+void render_surface_set_view(const char* id, int32_t width, int32_t height, int32_t msaa, tex_format_ color_format, tex_format_ depth_format, matrix* in_arr_view, matrix* in_arr_projection, int32_t count) {
+	uint64_t prop_hash = hash_fnv64_data(&width,        sizeof(width));
+	prop_hash          = hash_fnv64_data(&height,       sizeof(height),       prop_hash);
+	prop_hash          = hash_fnv64_data(&color_format, sizeof(color_format), prop_hash);
+	prop_hash          = hash_fnv64_data(&depth_format, sizeof(depth_format), prop_hash);
+	prop_hash          = hash_fnv64_data(&msaa,         sizeof(msaa),         prop_hash);
+	prop_hash          = hash_fnv64_data(&count,        sizeof(count),        prop_hash);
+
+	int32_t surface_index = render_surface_get_id(id);
+	if (surface_index == -1) {
+		surface_index = renderer_surfaces.count;
+		render_surface_t surf = {};
+		surf.id = hash_fnv64_string(id);
+		renderer_surfaces.add(surf);
+	}
+	render_surface_t *surface = &renderer_surfaces[surface_index];
+
+	if (surface->properties != prop_hash) {
+		surface->properties = prop_hash;
+		tex_release(surface->tex);
+		surface->tex = tex_create(tex_type_rendertarget, color_format);
+		tex_set_color_arr(surface->tex, width, height, nullptr, count, nullptr, msaa);
+		tex_release(tex_add_zbuffer(surface->tex, depth_format));
+
+		if (surface->count != count) {
+			surface->count = count;
+			sk_free(surface->arr_view);
+			sk_free(surface->arr_projection);
+			surface->arr_view       = sk_malloc_t(matrix, count);
+			surface->arr_projection = sk_malloc_t(matrix, count);
+		}
+	}
+	memcpy(surface->arr_view,       in_arr_view,       sizeof(matrix) * count);
+	memcpy(surface->arr_projection, in_arr_projection, sizeof(matrix) * count);
+}
+
+///////////////////////////////////////////
+
+tex_t render_surface_get_tex(const char* id) {
+	render_surface_t *surface = render_surface_get(id);
+	if (surface && surface->tex) {
+		tex_addref(surface->tex);
+		return surface->tex;
+	}
+	else return nullptr;
 }
 
 ///////////////////////////////////////////

@@ -398,7 +398,7 @@ float platform_get_scroll() {
 #if defined(SK_OS_WINDOWS_UWP)
 	return uwp_get_scroll();
 #elif defined(SK_OS_WINDOWS)
-	return win32_scroll;
+	return win32_get_scroll();
 #elif defined(SK_OS_LINUX)
 	return linux_get_scroll();
 #elif defined(SK_OS_WEB)

@@ -5,8 +5,6 @@
 
 namespace sk {
 
-extern float win32_scroll;
-
 bool win32_init           ();
 bool win32_start_pre_xr   ();
 bool win32_start_post_xr  ();
@@ -18,6 +16,7 @@ void win32_stop_flat      ();
 void win32_shutdown       ();
 
 void *win32_hwnd();
+float win32_get_scroll();
 
 } // namespace sk
 
