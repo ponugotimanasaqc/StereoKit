@@ -196,6 +196,7 @@ jobs:
       run: |
         sudo cp ./docker/arm-cross-compile-sources.list /etc/apt/sources.list.d/
         sudo cat /etc/apt/sources.list
+        sudo sed -i "s/jammy/focal/g" /etc/apt/sources.list
         sudo sed -i "s/deb http/deb [arch=amd64] http/g" /etc/apt/sources.list
         sudo dpkg --add-architecture arm64
         sudo apt-get update
