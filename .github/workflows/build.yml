@@ -88,59 +88,8 @@ jobs:
 
 ###########################################
 
-  build-windows:
-    runs-on: windows-latest
-    env:
-      CPM_SOURCE_CACHE: .deps_cache
-
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: ${{ inputs.branch }}
-    - uses: lukka/get-cmake@v3.26.3
-
-    - name: Get Cache
-      uses: actions/cache@v3
-      with:
-        key: DependencyCache
-        path: |
-          .deps_cache
-
-    - name: Set Version
-      shell: pwsh
-      run: ./tools/Set-Version.ps1 -major ${{inputs.major}} -minor ${{inputs.minor}} -patch ${{inputs.patch}} -pre ${{inputs.pre}} -preName ${{inputs.preName}}
-
-    - name: Build Native Win32 x64
-      run: |
-        cmake --preset Win32_x64_Release
-        cmake --build --preset Win32_x64_Release
-    - name: Build Native Win32 Arm64
-      run: |
-        cmake --preset Win32_Arm64_Release
-        cmake --build --preset Win32_Arm64_Release
-    - name: Build Native UWP x64
-      run: |
-        cmake --preset Uwp_x64_Release
-        cmake --build --preset Uwp_x64_Release
-    - name: Build Native UWP ARM64
-      run: |
-        cmake --preset Uwp_Arm64_Release
-        cmake --build --preset Uwp_Arm64_Release
-    - name: Build Native UWP ARM32
-      run: |
-        cmake --preset Uwp_Arm32_Release
-        cmake --build --preset Uwp_Arm32_Release
-
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: binaries
-        path: bin/distribute/
-
-###########################################
-
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env:
       CPM_SOURCE_CACHE: .deps_cache
 
@@ -156,13 +105,6 @@ jobs:
         key: DependencyCache
         path: |
           .deps_cache
-
-    - name: Set up Android NDK
-      uses: nttld/setup-ndk@v1
-      id: setup-ndk
-      with:
-        ndk-version: r25c
-        local-cache: true
 
     - name: Install Prerequisites
       run: |
@@ -178,26 +120,10 @@ jobs:
         cmake --preset Linux_x64_Release
         cmake --build --preset Linux_x64_Release
         
-    - name: Build Native Android ARM64
-      run: |
-        cmake --preset Android_Arm64_Release
-        cmake --build --preset Android_Arm64_Release
-      env:
-        NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
-        
-    - name: Build Native Android x64
-      run: |
-        cmake --preset Android_x64_Release
-        cmake --build --preset Android_x64_Release
-      env:
-        NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
-
     - name: Install Arm64 Prerequisites
       run: |
         sudo cp ./docker/arm-cross-compile-sources.list /etc/apt/sources.list.d/
         sudo cat /etc/apt/sources.list
-        sudo sed -i "s/jammy/focal/g" /etc/apt/sources.list
-        sudo sed -i "s/deb http/deb [arch=amd64] http/g" /etc/apt/sources.list
         sudo dpkg --add-architecture arm64
         sudo apt-get update
         sudo apt-get install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu lld:arm64 libfontconfig1-dev:arm64 libgl1-mesa-dev:arm64 libx11-xcb-dev:arm64 libxfixes-dev:arm64 libxcb-dri2-0-dev:arm64 libxcb-glx0-dev:arm64 libxcb-icccm4-dev:arm64 libxcb-keysyms1-dev:arm64 libxcb-randr0-dev:arm64 libxrandr-dev:arm64 libxxf86vm-dev:arm64 mesa-common-dev:arm64
@@ -217,7 +143,7 @@ jobs:
 
   build-package:
     runs-on: ubuntu-latest
-    needs: [build-windows, build-linux]
+    needs: [build-linux]
 
     steps:
     - uses: actions/checkout@v3
