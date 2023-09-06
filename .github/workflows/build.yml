@@ -114,7 +114,7 @@ jobs:
       run: |
         sudo cp ./docker/arm-cross-compile-sources.list /etc/apt/sources.list.d/
         sudo cat /etc/apt/sources.list
-        sudo cat /etc/cloud/templates/sources.list.tmpl
+        sed -i "s/deb mirror/deb [arch=amd64] mirror/g" /etc/apt/sources.list
         sudo cat /etc/cloud/cloud.cfg
         sudo dpkg --add-architecture arm64
         sudo apt-get update
